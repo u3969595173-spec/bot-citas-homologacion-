@@ -161,7 +161,8 @@ class Database:
             
             # Obtener siguiente posición
             cursor.execute("SELECT COALESCE(MAX(position), 0) + 1 FROM queue WHERE processed = FALSE")
-            position = cursor.fetchone()['coalesce']
+            result = cursor.fetchone()
+            position = result['coalesce'] if isinstance(result, dict) else result[0]
             
             cursor.execute("""
                 INSERT INTO queue (user_id, position, processed)
@@ -333,3 +334,4 @@ class Database:
 
 # Instancia global
 db = Database()
+
