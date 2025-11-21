@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
-Sistema de auto-llenado automático de citas SASTU
+Sistema de auto-llenado automÃ¡tico de citas SASTU
 Utiliza Playwright para automatizar el proceso de reserva
 """
 
@@ -13,7 +13,7 @@ import os
 logger = logging.getLogger(__name__)
 
 class CitasAutoFiller:
-    """Automatiza el llenado del formulario de citas de homologación"""
+    """Automatiza el llenado del formulario de citas de homologaciÃ³n"""
     
     def __init__(self):
         self.base_url = "https://citaprevia.ciencia.gob.es/qmaticwebbooking/#/"
@@ -21,7 +21,7 @@ class CitasAutoFiller:
         
     async def fill_appointment(self, user_data: Dict, available_date: str) -> Dict:
         """
-        Intenta reservar una cita automáticamente
+        Intenta reservar una cita automÃ¡ticamente
         
         Args:
             user_data: Diccionario con datos del usuario (name, document, email, phone)
@@ -32,7 +32,7 @@ class CitasAutoFiller:
         """
         try:
             async with async_playwright() as p:
-                logger.info(f"🤖 Iniciando auto-llenado para {user_data['name']}")
+                logger.info(f"ðŸ¤– Iniciando auto-llenado para {user_data['name']}")
                 
                 # Lanzar navegador en modo headless
                 browser = await p.chromium.launch(
@@ -52,59 +52,59 @@ class CitasAutoFiller:
                 
                 page = await context.new_page()
                 
-                # Navegar a la página
-                logger.info(f"📄 Navegando a {self.base_url}")
+                # Navegar a la pÃ¡gina
+                logger.info(f"ðŸ“„ Navegando a {self.base_url}")
                 await page.goto(self.base_url, wait_until='networkidle', timeout=self.timeout)
                 
                 # Esperar 2 segundos para que cargue completamente
                 await asyncio.sleep(2)
                 
                 # PASO 1: Seleccionar servicio SASTU
-                logger.info("📋 Seleccionando servicio SASTU...")
+                logger.info("ðŸ“‹ Seleccionando servicio SASTU...")
                 result = await self._select_service(page)
                 if not result['success']:
                     await browser.close()
                     return result
                 
                 # PASO 2: Seleccionar fecha disponible
-                logger.info(f"📅 Seleccionando fecha {available_date}...")
+                logger.info(f"ðŸ“… Seleccionando fecha {available_date}...")
                 result = await self._select_date(page, available_date)
                 if not result['success']:
                     await browser.close()
                     return result
                 
                 # PASO 3: Llenar formulario con datos del usuario
-                logger.info("✍️ Llenando formulario de datos...")
+                logger.info("âœï¸ Llenando formulario de datos...")
                 result = await self._fill_user_form(page, user_data)
                 if not result['success']:
                     await browser.close()
                     return result
                 
                 # PASO 4: Confirmar reserva
-                logger.info("✅ Confirmando reserva...")
+                logger.info("âœ… Confirmando reserva...")
                 result = await self._confirm_booking(page)
                 
                 # Capturar screenshot del resultado
                 screenshot_path = f"confirmation_{user_data['document']}.png"
                 await page.screenshot(path=screenshot_path, full_page=True)
-                logger.info(f"📸 Screenshot guardado: {screenshot_path}")
+                logger.info(f"ðŸ“¸ Screenshot guardado: {screenshot_path}")
                 
                 await browser.close()
                 
                 if result['success']:
-                    logger.info(f"✅ ¡RESERVA COMPLETADA AUTOMÁTICAMENTE! {result.get('confirmation', '')}")
+                    logger.info(f"âœ… Â¡RESERVA COMPLETADA AUTOMÃTICAMENTE! {result.get('confirmation', '')}")
                 
                 return result
                 
         except PlaywrightTimeout as e:
-            logger.error(f"⏱️ Timeout durante auto-llenado: {e}")
+            logger.error(f"â±ï¸ Timeout durante auto-llenado: {e}")
             return {
                 'success': False,
-                'message': f'Timeout: El sitio web tardó demasiado en responder',
+                'message': f'Timeout: El sitio web tardÃ³ demasiado en responder',
                 'error': str(e)
             }
         except Exception as e:
-            logger.error(f"❌ Error durante auto-llenado: {e}", exc_info=True)
+            logger.error(f"âŒ Error durante auto-llenado: {e}", exc_info=True)
             return {
                 'success': False,
                 'message': f'Error inesperado: {str(e)}',
@@ -112,12 +112,12 @@ class CitasAutoFiller:
             }
     
     async def _select_service(self, page) -> Dict:
-        """Selecciona el servicio SASTU en el menú"""
+        """Selecciona el servicio SASTU en el menÃº"""
         try:
-            # Buscar botones o links que contengan "SASTU" o "homologación"
+            # Buscar botones o links que contengan "SASTU" o "homologaciÃ³n"
             selectors = [
                 "text=/.*SASTU.*/i",
-                "text=/.*homologación.*/i",
+                "text=/.*homologaciÃ³n.*/i",
                 "text=/.*homologacion.*/i",
                 "button:has-text('SASTU')",
                 "a:has-text('SASTU')",
@@ -131,22 +131,22 @@ class CitasAutoFiller:
                     if await element.is_visible(timeout=5000):
                         await element.click()
                         await page.wait_for_load_state('networkidle', timeout=10000)
-                        logger.info("✅ Servicio SASTU seleccionado")
+                        logger.info("âœ… Servicio SASTU seleccionado")
                         return {'success': True}
                 except:
                     continue
             
             # Si no encuentra el selector, capturar el HTML para debug
             html = await page.content()
-            logger.error(f"❌ No se encontró el servicio SASTU en la página")
+            logger.error(f"âŒ No se encontrÃ³ el servicio SASTU en la pÃ¡gina")
             
             return {
                 'success': False,
-                'message': 'No se pudo encontrar el servicio SASTU en el menú'
+                'message': 'No se pudo encontrar el servicio SASTU en el menÃº'
             }
             
         except Exception as e:
-            logger.error(f"❌ Error seleccionando servicio: {e}")
+            logger.error(f"âŒ Error seleccionando servicio: {e}")
             return {'success': False, 'message': f'Error al seleccionar servicio: {str(e)}'}
     
     async def _select_date(self, page, target_date: str) -> Dict:
@@ -181,7 +181,7 @@ class CitasAutoFiller:
                         if await element.is_visible(timeout=5000):
                             await element.click()
                             await asyncio.sleep(1)
-                            logger.info(f"✅ Fecha {target_date} seleccionada")
+                            logger.info(f"âœ… Fecha {target_date} seleccionada")
                             return {'success': True}
                     except:
                         continue
@@ -191,7 +191,7 @@ class CitasAutoFiller:
             if available_dates:
                 await available_dates[0].click()
                 await asyncio.sleep(1)
-                logger.info("✅ Primera fecha disponible seleccionada")
+                logger.info("âœ… Primera fecha disponible seleccionada")
                 return {'success': True}
             
             return {
@@ -200,7 +200,7 @@ class CitasAutoFiller:
             }
             
         except Exception as e:
-            logger.error(f"❌ Error seleccionando fecha: {e}")
+            logger.error(f"âŒ Error seleccionando fecha: {e}")
             return {'success': False, 'message': f'Error al seleccionar fecha: {str(e)}'}
     
     async def _fill_user_form(self, page, user_data: Dict) -> Dict:
@@ -221,7 +221,7 @@ class CitasAutoFiller:
                 if not field_value:
                     continue
                 
-                # Múltiples selectores posibles para cada campo
+                # MÃºltiples selectores posibles para cada campo
                 selectors = [
                     f"input[name*='{field_name}' i]",
                     f"input[id*='{field_name}' i]",
@@ -238,7 +238,7 @@ class CitasAutoFiller:
                                 await element.clear()
                                 await element.fill(field_value)
                                 filled_count += 1
-                                logger.info(f"✅ Campo '{field_name}' llenado con: {field_value}")
+                                logger.info(f"âœ… Campo '{field_name}' llenado con: {field_value}")
                                 break
                     except:
                         continue
@@ -246,12 +246,12 @@ class CitasAutoFiller:
             if filled_count == 0:
                 return {
                     'success': False,
-                    'message': 'No se pudo llenar ningún campo del formulario'
+                    'message': 'No se pudo llenar ningÃºn campo del formulario'
                 }
             
-            logger.info(f"✅ {filled_count} campos llenados correctamente")
+            logger.info(f"âœ… {filled_count} campos llenados correctamente")
             
-            # Buscar y hacer clic en botón "Siguiente" o "Continuar"
+            # Buscar y hacer clic en botÃ³n "Siguiente" o "Continuar"
             next_buttons = [
                 "button:has-text('Siguiente')",
                 "button:has-text('Continuar')",
@@ -266,21 +266,21 @@ class CitasAutoFiller:
                     if await element.is_visible(timeout=3000):
                         await element.click()
                         await page.wait_for_load_state('networkidle', timeout=10000)
-                        logger.info("✅ Formulario enviado")
+                        logger.info("âœ… Formulario enviado")
                         return {'success': True}
                 except:
                     continue
             
-            return {'success': True, 'message': 'Formulario llenado (sin botón continuar)'}
+            return {'success': True, 'message': 'Formulario llenado (sin botÃ³n continuar)'}
             
         except Exception as e:
-            logger.error(f"❌ Error llenando formulario: {e}")
+            logger.error(f"âŒ Error llenando formulario: {e}")
             return {'success': False, 'message': f'Error al llenar formulario: {str(e)}'}
     
     async def _confirm_booking(self, page) -> Dict:
         """Confirma la reserva final"""
         try:
-            # Buscar botón de confirmación
+            # Buscar botÃ³n de confirmaciÃ³n
             confirm_buttons = [
                 "button:has-text('Confirmar')",
                 "button:has-text('Reservar')",
@@ -295,13 +295,13 @@ class CitasAutoFiller:
                     element = page.locator(selector).first
                     if await element.is_visible(timeout=5000):
                         await element.click()
-                        await asyncio.sleep(3)  # Esperar confirmación
+                        await asyncio.sleep(3)  # Esperar confirmaciÃ³n
                         
-                        # Buscar número de confirmación
+                        # Buscar nÃºmero de confirmaciÃ³n
                         confirmation_selectors = [
                             ".confirmation-number",
                             ".booking-reference",
-                            "text=/.*confirmación.*/i",
+                            "text=/.*confirmaciÃ³n.*/i",
                             "text=/.*reserva.*/i"
                         ]
                         
@@ -315,37 +315,37 @@ class CitasAutoFiller:
                             except:
                                 continue
                         
-                        logger.info(f"✅ Reserva confirmada: {confirmation_code}")
+                        logger.info(f"âœ… Reserva confirmada: {confirmation_code}")
                         return {
                             'success': True,
-                            'message': '¡Reserva completada exitosamente!',
+                            'message': 'Â¡Reserva completada exitosamente!',
                             'confirmation': confirmation_code
                         }
                 except:
                     continue
             
-            # Si llegamos aquí, asumimos que se completó pero sin confirmación explícita
+            # Si llegamos aquÃ­, asumimos que se completÃ³ pero sin confirmaciÃ³n explÃ­cita
             return {
                 'success': True,
-                'message': 'Proceso completado (sin código de confirmación)',
+                'message': 'Proceso completado (sin cÃ³digo de confirmaciÃ³n)',
                 'confirmation': 'COMPLETADO'
             }
             
         except Exception as e:
-            logger.error(f"❌ Error confirmando reserva: {e}")
+            logger.error(f"âŒ Error confirmando reserva: {e}")
             return {'success': False, 'message': f'Error al confirmar: {str(e)}'}
 
 
 async def auto_fill_appointment(user_data: Dict, available_date: str) -> Dict:
     """
-    Función principal para auto-llenar una cita
+    FunciÃ³n principal para auto-llenar una cita
     
     Args:
         user_data: Dict con {name, document, email, phone}
         available_date: Fecha disponible (YYYY-MM-DD)
     
     Returns:
-        Dict con resultado de la operación
+        Dict con resultado de la operaciÃ³n
     """
     filler = CitasAutoFiller()
     return await filler.fill_appointment(user_data, available_date)
@@ -366,3 +366,4 @@ if __name__ == "__main__":
     print(f"\n{'='*50}")
     print(f"Resultado: {result}")
     print(f"{'='*50}")
+

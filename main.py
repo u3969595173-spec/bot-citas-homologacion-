@@ -109,6 +109,18 @@ async def cita_disponible_handler(dates):
                     
             except Exception as e:
                 logger.error(f" Error en auto-llenado: {e}")
+                # Enviar screenshot de error si existe
+                if 'result' in locals() and 'screenshot' in result:
+                    try:
+                        error_screenshot = result['screenshot']
+                        if error_screenshot and os.path.exists(error_screenshot):
+                            await application.bot.send_photo(
+                                chat_id=ADMIN_USER_ID,
+                                photo=open(error_screenshot, 'rb'),
+                                caption=f" Error en auto-llenado\nUsuario: {user_id}\n{str(e)[:200]}"
+                            )
+                    except:
+                        pass
             
             #  RESPALDO MANUAL - Si auto-llenado falló
             mensaje = (
@@ -519,6 +531,7 @@ if __name__ == '__main__':
     time.sleep(delay)
     
     main()
+
 
 
 
