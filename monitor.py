@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 Monitor de disponibilidad de citas - API Qmatic
 """
@@ -28,18 +28,18 @@ class CitasMonitor:
         url = f"{QMATIC_BASE_URL}/schedule/branches/{BRANCH_ID}/dates;servicePublicId={SERVICE_ID};customSlotLength={CUSTOM_SLOT_LENGTH}"
         
         try:
-            # Ejecutar petición en thread separado para no bloquear
+            # Ejecutar peticiÃ³n en thread separado para no bloquear
             dates = await asyncio.to_thread(self.client.get, url)
             
             self.last_check = datetime.now()
             self.checks_count += 1
             
             if dates and len(dates) > 0:
-                logger.info(f"🎯 CITAS DISPONIBLES: {dates}")
+                logger.info(f"ðŸŽ¯ CITAS DISPONIBLES: {dates}")
                 return dates
             else:
                 if self.checks_count % 100 == 0:  # Log cada 100 checks
-                    logger.info(f"✓ Check #{self.checks_count} - Sin citas disponibles")
+                    logger.info(f"âœ“ Check #{self.checks_count} - Sin citas disponibles")
                 return []
                 
         except Exception as e:
@@ -47,18 +47,18 @@ class CitasMonitor:
             return []
     
     def get_check_interval(self):
-        """Determinar intervalo según hora del día"""
+        """Determinar intervalo segÃºn hora del dÃ­a"""
         now = datetime.now()
         
         # Modo TURBO de 12:00 a 14:00
         if TURBO_START_HOUR <= now.hour < TURBO_END_HOUR:
             return CHECK_INTERVAL_TURBO
         
-        # Pre-activación: 5 minutos antes del horario
+        # Pre-activaciÃ³n: 5 minutos antes del horario
         if now.hour == TURBO_START_HOUR - 1 and now.minute >= 55:
             return 1.0  # Revisar cada segundo
         
-        # Resto del día: modo normal
+        # Resto del dÃ­a: modo normal
         return CHECK_INTERVAL_NORMAL
     
     async def start_monitoring(self):
@@ -75,15 +75,15 @@ class CitasMonitor:
                 if dates:
                     await self.on_cita_available(dates)
                 
-                # Esperar según el intervalo
+                # Esperar segÃºn el intervalo
                 interval = self.get_check_interval()
                 
                 # Informar cambio de modo
                 now = datetime.now()
                 if now.hour == TURBO_START_HOUR and now.minute == 0 and now.second < 5:
-                    logger.warning(f"⚡ MODO TURBO ACTIVADO - Revisando cada {interval}s")
+                    logger.warning(f"âš¡ MODO TURBO ACTIVADO - Revisando cada {interval}s")
                 elif now.hour == TURBO_END_HOUR and now.minute == 0 and now.second < 5:
-                    logger.info(f"💤 Modo normal - Revisando cada {interval}s")
+                    logger.info(f"ðŸ’¤ Modo normal - Revisando cada {interval}s")
                 
                 await asyncio.sleep(interval)
                 
@@ -97,7 +97,7 @@ class CitasMonitor:
         logger.info("Monitor de citas detenido")
     
     def get_stats(self):
-        """Obtener estadísticas del monitor"""
+        """Obtener estadÃ­sticas del monitor"""
         return {
             'running': self.running,
             'checks_count': self.checks_count,

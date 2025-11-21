@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
+ï»¿# -*- coding: utf-8 -*-
 """
-Configuración del Bot de Citas - Homologación Médicos
+ConfiguraciÃ³n del Bot de Citas - HomologaciÃ³n MÃ©dicos
 Compatible con variables de entorno para Render
 """
 
@@ -17,7 +17,7 @@ BRANCH_ID = "7c2c5344f7ec051bc265995282e38698f770efab83ed9de0f9378d102f700630"
 SERVICE_ID = "e97539664874283b583f0ff0b25d1e34f0f14e083d59fb10b2dafb76e4544019"
 CUSTOM_SLOT_LENGTH = 10
 
-# Configuración de monitoreo
+# ConfiguraciÃ³n de monitoreo
 CHECK_INTERVAL_NORMAL = 0.05  # segundos (10 veces por segundo)
 CHECK_INTERVAL_TURBO = 0.05   # segundos (de 12:00 a 14:00)
 TURBO_START_HOUR = 12

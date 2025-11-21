@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+Ôªø# -*- coding: utf-8 -*-
 """
 Base de datos PostgreSQL para CitasBot
 """
@@ -11,7 +11,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# URL de conexiÛn desde variable de entorno
+# URL de conexi√≥n desde variable de entorno
 DATABASE_URL = os.getenv('DATABASE_URL', '')
 
 class Database:
@@ -150,7 +150,7 @@ class Database:
         try:
             cursor = self.conn.cursor()
             
-            # Verificar si ya est· en cola
+            # Verificar si ya est√° en cola
             cursor.execute("""
                 SELECT id FROM queue 
                 WHERE user_id = %s AND processed = FALSE
@@ -160,7 +160,7 @@ class Database:
                 cursor.close()
                 return self.get_queue_position(user_id)
             
-            # Obtener siguiente posiciÛn
+            # Obtener siguiente posici√≥n
             cursor.execute("SELECT COALESCE(MAX(position), 0) + 1 FROM queue WHERE processed = FALSE")
             result = cursor.fetchone()
             position = result['coalesce'] if isinstance(result, dict) else result[0]
@@ -235,7 +235,7 @@ class Database:
             return False
     
     def get_queue_position(self, user_id):
-        """Obtener posiciÛn en cola"""
+        """Obtener posici√≥n en cola"""
         if not self.conn:
             return 0
         
@@ -252,11 +252,11 @@ class Database:
             cursor.close()
             return result['pos'] if result else 0
         except Exception as e:
-            logger.error(f"Error obteniendo posiciÛn: {e}")
+            logger.error(f"Error obteniendo posici√≥n: {e}")
             return 0
     
     def get_queue_stats(self):
-        """Obtener estadÌsticas de la cola"""
+        """Obtener estad√≠sticas de la cola"""
         if not self.conn:
             return {'en_espera': 0, 'procesados': 0}
         
@@ -332,10 +332,10 @@ class Database:
             return False
     
     def close(self):
-        """Cerrar conexiÛn"""
+        """Cerrar conexi√≥n"""
         if self.conn:
             self.conn.close()
-            logger.info(" ConexiÛn a BD cerrada")
+            logger.info(" Conexi√≥n a BD cerrada")
 
 # Instancia global
 db = Database()

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+ï»¿# -*- coding: utf-8 -*-
 """
 Comandos adicionales para el bot
 """
@@ -23,10 +23,10 @@ async def pausar_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await update.message.reply_text(
         ' **Monitoreo pausado**\n\n'
-        'Tu monitoreo está temporalmente pausado.\n'
+        'Tu monitoreo estÃ¡ temporalmente pausado.\n'
         'Usa /reanudar cuando quieras continuar.'
     )
-    logger.info(f'Usuario {user_id} pausó monitoreo')
+    logger.info(f'Usuario {user_id} pausÃ³ monitoreo')
 
 async def reanudar_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Reanudar monitoreo"""
@@ -39,7 +39,7 @@ async def reanudar_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     
     if not usuarios_activos[user_id].get('pausado', False):
-        await update.message.reply_text('? Tu monitoreo ya está activo.')
+        await update.message.reply_text('? Tu monitoreo ya estÃ¡ activo.')
         return
     
     # Reanudar
@@ -48,22 +48,22 @@ async def reanudar_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         ' **Monitoreo reanudado**\n\n'
         ' Volviste al monitoreo activo.\n'
-        'Te notificaré cuando haya citas disponibles.'
+        'Te notificarÃ© cuando haya citas disponibles.'
     )
-    logger.info(f'Usuario {user_id} reanudó monitoreo')
+    logger.info(f'Usuario {user_id} reanudÃ³ monitoreo')
 
 async def test_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Probar notificación"""
+    """Probar notificaciÃ³n"""
     await update.message.reply_text(
-        ' **Test de notificación**\n\n'
+        ' **Test de notificaciÃ³n**\n\n'
         ' Bot funcionando correctamente\n'
         ' Notificaciones activas\n\n'
-        'Recibirás alertas como esta cuando haya citas.'
+        'RecibirÃ¡s alertas como esta cuando haya citas.'
     )
-    logger.info(f'Test de notificación para usuario {update.effective_user.id}')
+    logger.info(f'Test de notificaciÃ³n para usuario {update.effective_user.id}')
 
 async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Estadísticas del bot"""
+    """EstadÃ­sticas del bot"""
     from main import monitor, usuarios_activos
     
     if not monitor:
@@ -76,21 +76,21 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uptime_hours = uptime_seconds / 3600
     
     texto = (
-        f' **Estadísticas del Bot**\n\n'
+        f' **EstadÃ­sticas del Bot**\n\n'
         f' Estado: {"Activo" if monitor.running else "Inactivo"}\n'
         f' Checks realizados: {stats["checks_realizados"]}\n'
-        f' Último check: {stats["last_check"]}\n'
+        f' Ãšltimo check: {stats["last_check"]}\n'
         f' Intervalo actual: {stats["current_interval"]}s\n'
         f' Usuarios monitoreando: {len(usuarios_activos)}\n'
         f' Uptime: {uptime_hours:.1f}h\n\n'
-        f' Bot ultra-rápido: ~20 checks/segundo'
+        f' Bot ultra-rÃ¡pido: ~20 checks/segundo'
     )
     
     await update.message.reply_text(texto, parse_mode='Markdown')
 
 
 async def cola_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Ver posición en la cola"""
+    """Ver posiciÃ³n en la cola"""
     from main import citas_queue
     
     user_id = update.effective_user.id
@@ -100,29 +100,29 @@ async def cola_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if position == -1:
         await update.message.reply_text(
             ' **Ya tienes cita asignada**\n\n'
-            'Ya fuiste procesado y se te asignó una cita.\n'
+            'Ya fuiste procesado y se te asignÃ³ una cita.\n'
             'Revisa tus mensajes anteriores.'
         )
     elif position == 0:
         await update.message.reply_text(
-            ' **No estás en la cola**\n\n'
+            ' **No estÃ¡s en la cola**\n\n'
             f' Usuarios en espera: {stats["en_espera"]}\n'
             f' Usuarios procesados: {stats["procesados"]}\n\n'
             'Usa /registrar para unirte a la cola.'
         )
     else:
         await update.message.reply_text(
-            f' **Tu posición en la cola: #{position}**\n\n'
+            f' **Tu posiciÃ³n en la cola: #{position}**\n\n'
             f' Total en espera: {stats["en_espera"]}\n'
             f' Ya procesados: {stats["procesados"]}\n\n'
-            f' Serás el {"próximo" if position == 1 else f"{position}º"} en recibir cita.\n'
-            'Cuando aparezca una cita, se te asignará automáticamente.'
+            f' SerÃ¡s el {"prÃ³ximo" if position == 1 else f"{position}Âº"} en recibir cita.\n'
+            'Cuando aparezca una cita, se te asignarÃ¡ automÃ¡ticamente.'
         )
     
-    logger.info(f'Usuario {user_id} consultó su posición: {position}')
+    logger.info(f'Usuario {user_id} consultÃ³ su posiciÃ³n: {position}')
 
 async def confirmar_cita_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Usuario confirma que ya consiguió cita y sale de la cola"""
+    """Usuario confirma que ya consiguiÃ³ cita y sale de la cola"""
     from main import citas_queue, usuarios_activos
     
     user_id = update.effective_user.id
@@ -137,9 +137,9 @@ async def confirmar_cita_command(update: Update, context: ContextTypes.DEFAULT_T
     
     if position == 0:
         await update.message.reply_text(
-            ' **No estás en la cola**\n\n'
+            ' **No estÃ¡s en la cola**\n\n'
             'No tienes monitoreo activo.\n'
-            'Si ya conseguiste cita por otro medio, ¡felicidades! '
+            'Si ya conseguiste cita por otro medio, Â¡felicidades! '
         )
         return
     
@@ -157,11 +157,11 @@ async def confirmar_cita_command(update: Update, context: ContextTypes.DEFAULT_T
         stats = citas_queue.get_queue_stats()
         
         await update.message.reply_text(
-            ' **¡Felicidades por tu cita!**\n\n'
+            ' **Â¡Felicidades por tu cita!**\n\n'
             ' Has sido removido de la cola\n'
             ' Tu monitoreo ha sido desactivado\n\n'
             f' Usuarios restantes en cola: {stats["en_espera"]}\n\n'
-            '¡Buena suerte con tu homologación! '
+            'Â¡Buena suerte con tu homologaciÃ³n! '
         )
         
         # Notificar al admin
@@ -172,7 +172,7 @@ async def confirmar_cita_command(update: Update, context: ContextTypes.DEFAULT_T
             try:
                 await application.bot.send_message(
                     chat_id=ADMIN_USER_ID,
-                    text=f'? **Usuario confirmó cita**\n\n'
+                    text=f'? **Usuario confirmÃ³ cita**\n\n'
                          f' User ID: {user_id}\n'
                          f' Removido de cola (era #{position})\n'
                          f' Cola actual: {stats["en_espera"]} usuarios'
@@ -180,7 +180,7 @@ async def confirmar_cita_command(update: Update, context: ContextTypes.DEFAULT_T
             except:
                 pass
         
-        logger.info(f'Usuario {user_id} confirmó cita y salió de cola (era #{position})')
+        logger.info(f'Usuario {user_id} confirmÃ³ cita y saliÃ³ de cola (era #{position})')
     else:
         await update.message.reply_text(
             ' Error al remover de la cola.\n'
@@ -189,7 +189,7 @@ async def confirmar_cita_command(update: Update, context: ContextTypes.DEFAULT_T
 
 
 async def cancelar_cola_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Usuario cancela su participación en la cola"""
+    """Usuario cancela su participaciÃ³n en la cola"""
     from main import citas_queue, usuarios_activos
     
     user_id = update.effective_user.id
@@ -197,7 +197,7 @@ async def cancelar_cola_command(update: Update, context: ContextTypes.DEFAULT_TY
     
     if position <= 0:
         await update.message.reply_text(
-            ' **No estás en la cola**\n\n'
+            ' **No estÃ¡s en la cola**\n\n'
             'No tienes monitoreo activo.'
         )
         return
@@ -220,6 +220,6 @@ async def cancelar_cola_command(update: Update, context: ContextTypes.DEFAULT_TY
             'Puedes volver a registrarte cuando quieras con /registrar'
         )
         
-        logger.info(f'Usuario {user_id} canceló participación en cola (era #{position})')
+        logger.info(f'Usuario {user_id} cancelÃ³ participaciÃ³n en cola (era #{position})')
     else:
         await update.message.reply_text(' Error al cancelar. Intenta de nuevo.')
