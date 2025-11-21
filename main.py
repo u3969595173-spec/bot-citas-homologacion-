@@ -40,67 +40,106 @@ NOMBRE, APELLIDO, DOCUMENTO, EMAIL, TELEFONO = range(5)
 
 
 async def cita_disponible_handler(dates):
-    """Callback cuando se detecta cita disponible"""
-    logger.warning(f"ðŸŽ¯ CITA DISPONIBLE: {dates}")
-
-    # Extraer solo las fechas de los diccionarios
-    date_strings = [d["date"] if isinstance(d, dict) else str(d) for d in dates]
+    """Callback cuando se detecta cita disponible - Con auto-llenado"""
+    logger.warning(f" CITA DISPONIBLE: {dates}")
     
-    # Notificar al admin primero
+    date_strings = [d["date"] if isinstance(d, dict) else str(d) for d in dates]
+    first_date = date_strings[0] if date_strings else ""
+    
+    # Procesar cada usuario en la cola
+    for user_id, user_data in usuarios_activos.items():
+        if user_data.get('notified', False):
+            continue
+            
+        try:
+            user_info = user_data_manager.get_user_data(user_id)
+            if not user_info:
+                continue
+            
+            # Preparar datos para auto-llenado
+            fill_data = {
+                'name': f"{user_info['nombre']} {user_info['apellido']}",
+                'document': user_info['documento'],
+                'email': user_info['email'],
+                'phone': user_info['telefono']
+            }
+            
+            #  INTENTAR AUTO-LLENADO AUTOMÁTICO
+            logger.info(f" Iniciando auto-llenado para usuario {user_id}")
+            
+            try:
+                result = await auto_fill_appointment(fill_data, first_date)
+                
+                if result['success']:
+                    #  ÉXITO - Reserva completada automáticamente
+                    confirmation = result.get('confirmation', 'COMPLETADO')
+                    
+                    success_msg = (
+                        f" **¡RESERVA COMPLETADA AUTOMÁTICAMENTE!**\n\n"
+                        f" Fecha: {first_date}\n"
+                        f" Confirmación: {confirmation}\n\n"
+                        f" **Tus datos:**\n"
+                        f" Nombre: {fill_data['name']}\n"
+                        f" Documento: {fill_data['document']}\n"
+                        f" Email: {fill_data['email']}\n"
+                        f" Teléfono: {fill_data['phone']}\n\n"
+                        f" Revisa tu email para más detalles."
+                    )
+                    
+                    await application.bot.send_message(chat_id=user_id, text=success_msg)
+                    
+                    # Enviar screenshot si existe
+                    screenshot_path = f"confirmation_{fill_data['document']}.png"
+                    try:
+                        if os.path.exists(screenshot_path):
+                            await application.bot.send_photo(chat_id=user_id, photo=open(screenshot_path, 'rb'), caption=" Captura de la confirmación")
+                    except:
+                        pass
+                    
+                    # Notificar admin
+                    if ADMIN_USER_ID:
+                        await application.bot.send_message(
+                            chat_id=ADMIN_USER_ID,
+                            text=f" **AUTO-RESERVA EXITOSA**\n\n {fill_data['name']} (ID: {user_id})\n {first_date}\n {confirmation}"
+                        )
+                    
+                    user_data['notified'] = True
+                    logger.info(f" Auto-llenado exitoso para usuario {user_id}")
+                    continue
+                    
+            except Exception as e:
+                logger.error(f" Error en auto-llenado: {e}")
+            
+            #  RESPALDO MANUAL - Si auto-llenado falló
+            mensaje = (
+                f" **¡CITA DISPONIBLE!**\n\n"
+                f" El auto-llenado no pudo completarse\n"
+                f"Por favor, reserva manualmente:\n\n"
+                f" Fechas: {', '.join(date_strings)}\n\n"
+                f" **Tus datos:**\n"
+                f" Nombre: {fill_data['name']}\n"
+                f" Documento: {fill_data['document']}\n"
+                f" Email: {fill_data['email']}\n"
+                f" Teléfono: {fill_data['phone']}\n\n"
+                f" **ACTÚA RÁPIDO**\n\n"
+                f" https://citaprevia.ciencia.gob.es/qmaticwebbooking/#/"
+            )
+            
+            await application.bot.send_message(chat_id=user_id, text=mensaje)
+            user_data['notified'] = True
+            
+        except Exception as e:
+            logger.error(f"Error procesando usuario {user_id}: {e}")
+    
+    # Notificar admin
     if ADMIN_USER_ID:
         try:
             await application.bot.send_message(
                 chat_id=ADMIN_USER_ID,
-                text=f"ðŸš¨ **ADMIN: CITA DISPONIBLE DETECTADA**\n\n"
-                     f"ðŸ“… Fechas disponibles: {', '.join(date_strings)}\n"
-                     f"ðŸ‘¥ Usuarios registrados: {len(usuarios_activos)}\n\n"
-                     f"âš ï¸ **ACCIÃ“N MANUAL REQUERIDA:**\n"
-                     f"1. Ve a: https://citaprevia.ciencia.gob.es/qmaticwebbooking/#/\n"
-                     f"2. Selecciona la fecha: {date_strings[0]}\n"
-                     f"3. Completa con los datos del usuario\n\n"
-                     f"ðŸ“‹ Para ver datos de usuarios, usa /admin"
+                text=f" **CITA DISPONIBLE DETECTADA**\n\n {', '.join(date_strings)}\n {len(usuarios_activos)} usuarios notificados"
             )
         except Exception as e:
             logger.error(f"Error notificando admin: {e}")
-    
-    # Notificar a todos los usuarios activos
-    for user_id, user_data in usuarios_activos.items():
-        if not user_data.get('notified', False):
-            try:
-                # Obtener datos del usuario
-                user_info = user_data_manager.get_user_data(user_id)
-                
-                if user_info:
-                    mensaje = (
-                        f"ðŸŽ¯ **Â¡CITA DISPONIBLE!**\n\n"
-                        f"ðŸ“… Fechas: {', '.join(date_strings)}\n\n"
-                        f"ðŸ“‹ **Tus datos registrados:**\n"
-                        f"â€¢ Nombre: {user_info['nombre']} {user_info['apellido']}\n"
-                        f"â€¢ Documento: {user_info['documento']}\n"
-                        f"â€¢ Email: {user_info['email']}\n"
-                        f"â€¢ TelÃ©fono: {user_info['telefono']}\n\n"
-                        f"âš ï¸ **RESERVA MANUAL:**\n"
-                        f"El administrador completarÃ¡ tu reserva manualmente.\n"
-                        f"Te confirmaremos cuando estÃ© lista.\n\n"
-                        f"ðŸ”— Link: https://citaprevia.ciencia.gob.es/qmaticwebbooking/#/"
-                    )
-                else:
-                    mensaje = (
-                        f"ðŸŽ¯ **Â¡CITA DISPONIBLE!**\n\n"
-                        f"ðŸ“… Fechas: {', '.join(date_strings)}\n\n"
-                        f"âš ï¸ **No tienes datos registrados**\n"
-                        f"Usa /datos para registrar tu informaciÃ³n.\n\n"
-                        f"ðŸ”— Link: https://citaprevia.ciencia.gob.es/qmaticwebbooking/#/"
-                    )
-                
-                await application.bot.send_message(
-                    chat_id=user_id,
-                    text=mensaje
-                )
-                user_data['notified'] = True
-            except Exception as e:
-                logger.error(f"Error notificando usuario {user_id}: {e}")
-
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Comando /start"""
@@ -480,6 +519,7 @@ if __name__ == '__main__':
     time.sleep(delay)
     
     main()
+
 
 
 
