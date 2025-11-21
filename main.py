@@ -1,4 +1,13 @@
-﻿"""
+﻿
+async def post_shutdown(application: Application):
+    `Detener el monitor al cerrar el bot`
+    global monitor
+    
+    if monitor:
+        logger.info(' Cerrando bot...')
+        monitor.stop_monitoring()
+        logger.info(' Monitor detenido')
+"""
 Bot de Telegram para Citas de HomologaciÃ³n
 Sistema de monitoreo y auto-reserva de citas
 """
@@ -441,3 +450,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
