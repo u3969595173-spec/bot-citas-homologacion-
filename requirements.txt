@@ -2,3 +2,8 @@
 requests==2.31.0
 urllib3==2.1.0
 psycopg2>=2.9
+
+# Auto-llenado automático de formularios
+playwright>=1.40.0
+playwright-stealth>=1.0.2
+Pillow>=10.0.0
