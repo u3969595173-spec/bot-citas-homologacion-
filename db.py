@@ -257,7 +257,7 @@ class Database:
     def get_queue_stats(self):
         """Obtener estadísticas de la cola"""
         if not self.conn:
-            return {'waiting': 0, 'processed': 0}
+            return {'en_espera': 0, 'procesados': 0}
         
         try:
             cursor = self.conn.cursor()
@@ -269,10 +269,14 @@ class Database:
             """)
             result = cursor.fetchone()
             cursor.close()
-            return dict(result) if result else {'waiting': 0, 'processed': 0}
+            if result:
+
+                return {'en_espera': result['waiting'], 'procesados': result['processed']}
+
+            return {'en_espera': 0, 'procesados': 0}
         except Exception as e:
             logger.error(f"Error obteniendo stats: {e}")
-            return {'waiting': 0, 'processed': 0}
+            return {'en_espera': 0, 'procesados': 0}
     
     # ========== USUARIOS ACTIVOS ==========
     
@@ -334,4 +338,5 @@ class Database:
 
 # Instancia global
 db = Database()
+
 
