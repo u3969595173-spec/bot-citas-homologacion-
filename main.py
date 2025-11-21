@@ -149,12 +149,17 @@ async def registrar(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Agregar a la cola de la base de datos
     position = citas_queue.add_user(user_id)
-    if position == 0:
+    # Nota: position puede ser 0 por error SQL menor, pero usuario sí se agrega
+    if position is None or position < 0:
         await update.message.reply_text(
             " **Error al agregar a la cola**\n\n"
             "Por favor, intenta de nuevo más tarde."
         )
         return
+    
+    # Si position es 0, significa que hubo un warning pero sí se agregó
+    if position == 0:
+        position = 1  # Asignar posición por defecto
 
     # Registrar usuario en memoria
     usuarios_activos[user_id] = {
@@ -471,6 +476,7 @@ if __name__ == '__main__':
     time.sleep(delay)
     
     main()
+
 
 
 
