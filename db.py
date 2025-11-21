@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 Base de datos PostgreSQL para CitasBot
 """
@@ -161,9 +161,9 @@ class Database:
                 return self.get_queue_position(user_id)
             
             # Obtener siguiente posición
-            cursor.execute("SELECT COALESCE(MAX(position), 0) + 1 FROM queue WHERE processed = FALSE")
+            cursor.execute("SELECT COALESCE(MAX(position), 0) + 1 AS next_pos FROM queue WHERE processed = FALSE")
             result = cursor.fetchone()
-            position = result['coalesce'] if isinstance(result, dict) else result[0]
+            position = result['next_pos'] if isinstance(result, dict) else result[0]
             
             cursor.execute("""
                 INSERT INTO queue (user_id, position, processed)
