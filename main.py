@@ -18,7 +18,8 @@ from monitor import CitasMonitor
 from user_data import UserDataManager
 from health_server import start_health_server
 from daily_heartbeat import daily_heartbeat
-from commands_extra import pausar_command, reanudar_command, test_command, stats_command
+from queue_manager import CitasQueue
+from commands_extra import pausar_command, reanudar_command, test_command, stats_command, cola_command
 
 # Configurar logging
 logging.basicConfig(
@@ -31,6 +32,7 @@ logger = logging.getLogger(__name__)
 monitor = None
 usuarios_activos = {}  # {user_id: {'datos': {...}, 'notified': False}}
 user_data_manager = UserDataManager()
+citas_queue = CitasQueue()
 
 # Estados para conversaciÃ³n de registro de datos
 NOMBRE, APELLIDO, DOCUMENTO, EMAIL, TELEFONO = range(5)
@@ -115,7 +117,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"/status - Ver estado del monitor\n"          f"/pausar - Pausar monitoreo temporalmente\n"
           f"/reanudar - Reanudar monitoreo\n"
           f"/test - Probar notificaciones\n"
-          f"/stats - Estadísticas del bot\n"
+          f"/stats - Estadísticas del bot\n"          f"/cola - Ver tu posición en la cola\n"
         f"/mistats - Ver mis datos registrados\n"
         f"/stop - Detener monitoreo\n\n"
         f"ðŸ“ Tus datos: {data_status}\n\n"
@@ -423,6 +425,7 @@ def main():
     application.add_handler(CommandHandler("reanudar", reanudar_command))
     application.add_handler(CommandHandler("test", test_command))
     application.add_handler(CommandHandler("stats", stats_command))
+    application.add_handler(CommandHandler("cola", cola_command))
     
     # Iniciar bot
     logger.info("ðŸš€ Iniciando Bot de Citas...")

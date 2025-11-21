@@ -86,3 +86,36 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     
     await update.message.reply_text(texto, parse_mode='Markdown')
+
+
+async def cola_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Ver posición en la cola"""
+    from main import citas_queue
+    
+    user_id = update.effective_user.id
+    position = citas_queue.get_position(user_id)
+    stats = citas_queue.get_queue_stats()
+    
+    if position == -1:
+        await update.message.reply_text(
+            ' **Ya tienes cita asignada**\n\n'
+            'Ya fuiste procesado y se te asignó una cita.\n'
+            'Revisa tus mensajes anteriores.'
+        )
+    elif position == 0:
+        await update.message.reply_text(
+            ' **No estás en la cola**\n\n'
+            f' Usuarios en espera: {stats["en_espera"]}\n'
+            f' Usuarios procesados: {stats["procesados"]}\n\n'
+            'Usa /registrar para unirte a la cola.'
+        )
+    else:
+        await update.message.reply_text(
+            f' **Tu posición en la cola: #{position}**\n\n'
+            f' Total en espera: {stats["en_espera"]}\n'
+            f' Ya procesados: {stats["procesados"]}\n\n'
+            f' Serás el {"próximo" if position == 1 else f"{position}º"} en recibir cita.\n'
+            'Cuando aparezca una cita, se te asignará automáticamente.'
+        )
+    
+    logger.info(f'Usuario {user_id} consultó su posición: {position}')
