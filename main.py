@@ -41,6 +41,9 @@ NOMBRE, APELLIDO, DOCUMENTO, EMAIL, TELEFONO = range(5)
 async def cita_disponible_handler(dates):
     """Callback cuando se detecta cita disponible"""
     logger.warning(f"ðŸŽ¯ CITA DISPONIBLE: {dates}")
+
+    # Extraer solo las fechas de los diccionarios
+    date_strings = [d["date"] if isinstance(d, dict) else str(d) for d in dates]
     
     # Notificar al admin primero
     if ADMIN_USER_ID:
@@ -52,7 +55,7 @@ async def cita_disponible_handler(dates):
                      f"ðŸ‘¥ Usuarios registrados: {len(usuarios_activos)}\n\n"
                      f"âš ï¸ **ACCIÃ“N MANUAL REQUERIDA:**\n"
                      f"1. Ve a: https://citaprevia.ciencia.gob.es/qmaticwebbooking/#/\n"
-                     f"2. Selecciona la fecha: {dates[0]}\n"
+                     f"2. Selecciona la fecha: {date_strings[0]}\n"
                      f"3. Completa con los datos del usuario\n\n"
                      f"ðŸ“‹ Para ver datos de usuarios, usa /admin"
             )
@@ -476,6 +479,8 @@ if __name__ == '__main__':
     time.sleep(delay)
     
     main()
+
+
 
 
 
