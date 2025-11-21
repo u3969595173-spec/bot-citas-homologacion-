@@ -63,7 +63,7 @@ class CitasMonitor:
     async def start_monitoring(self):
         """Iniciar monitoreo continuo"""
         self.running = True
-        logger.info("ðŸš€ Monitor de citas iniciado (usando curl.exe para HTTP)")
+        logger.info(" Monitor de citas iniciado")
         
         while self.running:
             try:
