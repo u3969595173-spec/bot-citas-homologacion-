@@ -17,8 +17,8 @@ SERVICE_ID = "e97539664874283b583f0ff0b25d1e34f0f14e083d59fb10b2dafb76e4544019"
 CUSTOM_SLOT_LENGTH = 10
 
 # Configuración de monitoreo
-CHECK_INTERVAL_NORMAL = 0.1  # segundos (10 veces por segundo)
-CHECK_INTERVAL_TURBO = 0.1   # segundos (de 12:00 a 14:00)
+CHECK_INTERVAL_NORMAL = 0.05  # segundos (10 veces por segundo)
+CHECK_INTERVAL_TURBO = 0.05   # segundos (de 12:00 a 14:00)
 TURBO_START_HOUR = 12
 TURBO_END_HOUR = 14
 

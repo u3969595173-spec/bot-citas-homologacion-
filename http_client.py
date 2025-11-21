@@ -1,5 +1,5 @@
 ﻿"""
-Cliente HTTP multiplataforma con bypass SSL
+Cliente HTTP multiplataforma con bypass SSL - OPTIMIZADO PARA VELOCIDAD
 Compatible con Windows y Linux usando curl
 """
 
@@ -13,7 +13,7 @@ import atexit
 logger = logging.getLogger(__name__)
 
 class HTTPClient:
-    """Cliente HTTP que usa curl (Windows y Linux)"""
+    """Cliente HTTP que usa curl (Windows y Linux) - ULTRA RÁPIDO"""
     
     # Configuración OpenSSL compartida (singleton)
     _openssl_conf = None
@@ -26,7 +26,6 @@ class HTTPClient:
             return
             
         try:
-            # Crear archivo de configuración temporal
             fd, cls._openssl_conf = tempfile.mkstemp(suffix='.cnf', text=True)
             
             config_content = """
@@ -46,10 +45,8 @@ CipherString = DEFAULT@SECLEVEL=0
             os.write(fd, config_content.encode('utf-8'))
             os.close(fd)
             
-            logger.info(f" Configuración OpenSSL creada: {cls._openssl_conf}")
+            logger.info(f" Config SSL creada: {cls._openssl_conf}")
             cls._initialized = True
-            
-            # Registrar limpieza al salir
             atexit.register(cls._cleanup)
             
         except Exception as e:
@@ -58,44 +55,42 @@ CipherString = DEFAULT@SECLEVEL=0
     
     @classmethod
     def _cleanup(cls):
-        """Limpiar archivo temporal al salir"""
+        """Limpiar archivo temporal"""
         if cls._openssl_conf and os.path.exists(cls._openssl_conf):
             try:
                 os.unlink(cls._openssl_conf)
-                logger.debug("Config OpenSSL limpiada")
             except:
                 pass
     
     @staticmethod
     def get(url):
-        """Petición GET usando curl con SSL bypass"""
-        # Inicializar configuración si es necesario
+        """Petición GET ultra rápida"""
         HTTPClient._init_openssl_config()
         
         try:
             env = os.environ.copy()
-            
-            # Configurar variable de entorno para OpenSSL
             if HTTPClient._openssl_conf:
                 env['OPENSSL_CONF'] = HTTPClient._openssl_conf
             
             result = subprocess.run(
                 [
                     'curl',
-                    '-s',  # Silent mode
-                    '-k',  # Ignorar errores de certificado
+                    '-s',  # Silent
+                    '-k',  # Ignorar SSL
+                    '--max-time', '3',  # Timeout 3s (antes 10s)
+                    '--connect-timeout', '2',  # Conexión 2s
+                    '--keepalive-time', '10',  # Mantener conexión viva
+                    '--no-buffer',  # Sin buffering
+                    '--compressed',  # Aceptar compresión
                     '--tlsv1.2',
-                    '--ssl-allow-beast',
                     '--ciphers', 'DEFAULT@SECLEVEL=0',
-                    '-H', 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                    '-H', 'Accept: application/json, text/plain, */*',
-                    '-H', 'Accept-Language: es-ES,es;q=0.9',
-                    '-H', 'Referer: https://citaprevia.ciencia.gob.es/qmaticwebbooking/',
+                    '-H', 'User-Agent: Mozilla/5.0',
+                    '-H', 'Accept: application/json',
                     url
                 ],
                 capture_output=True,
                 text=True,
-                timeout=10,
+                timeout=5,  # Timeout Python 5s
                 env=env
             )
             
@@ -103,15 +98,17 @@ CipherString = DEFAULT@SECLEVEL=0
                 try:
                     return json.loads(result.stdout)
                 except json.JSONDecodeError:
-                    # No loguear como error si es respuesta esperada del servidor
                     if "Exception when fetching" not in result.stdout:
-                        logger.error(f"Respuesta no es JSON válido: {result.stdout[:100]}")
+                        logger.debug(f"Respuesta no JSON: {result.stdout[:50]}")
                     return None
             else:
-                if result.stderr:
-                    logger.error(f"curl error: {result.stderr}")
+                if result.stderr and len(result.stderr) > 10:
+                    logger.debug(f"curl: {result.stderr[:100]}")
                 return None
                 
+        except subprocess.TimeoutExpired:
+            logger.warning("Timeout en petición HTTP")
+            return None
         except Exception as e:
-            logger.error(f"Error ejecutando curl: {e}")
+            logger.error(f"Error curl: {e}")
             return None
