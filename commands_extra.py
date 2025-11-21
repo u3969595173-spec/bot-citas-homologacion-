@@ -119,3 +119,106 @@ async def cola_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     
     logger.info(f'Usuario {user_id} consultó su posición: {position}')
+
+async def confirmar_cita_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Usuario confirma que ya consiguió cita y sale de la cola"""
+    from main import citas_queue, usuarios_activos
+    
+    user_id = update.effective_user.id
+    position = citas_queue.get_position(user_id)
+    
+    if position == -1:
+        await update.message.reply_text(
+            ' **Ya estabas marcado como procesado**\n\n'
+            'Tu cita ya fue confirmada anteriormente.'
+        )
+        return
+    
+    if position == 0:
+        await update.message.reply_text(
+            ' **No estás en la cola**\n\n'
+            'No tienes monitoreo activo.\n'
+            'Si ya conseguiste cita por otro medio, ¡felicidades! '
+        )
+        return
+    
+    # Remover de la cola
+    removed = citas_queue.remove_user(user_id)
+    
+    if removed:
+        # Marcar como procesado manualmente
+        citas_queue.mark_processed(user_id, 'Confirmada manualmente')
+        
+        # Remover de usuarios activos
+        if user_id in usuarios_activos:
+            del usuarios_activos[user_id]
+        
+        stats = citas_queue.get_queue_stats()
+        
+        await update.message.reply_text(
+            ' **¡Felicidades por tu cita!**\n\n'
+            ' Has sido removido de la cola\n'
+            ' Tu monitoreo ha sido desactivado\n\n'
+            f' Usuarios restantes en cola: {stats["en_espera"]}\n\n'
+            '¡Buena suerte con tu homologación! '
+        )
+        
+        # Notificar al admin
+        from config import ADMIN_USER_ID
+        from main import application
+        
+        if ADMIN_USER_ID:
+            try:
+                await application.bot.send_message(
+                    chat_id=ADMIN_USER_ID,
+                    text=f'ℹ **Usuario confirmó cita**\n\n'
+                         f' User ID: {user_id}\n'
+                         f' Removido de cola (era #{position})\n'
+                         f' Cola actual: {stats["en_espera"]} usuarios'
+                )
+            except:
+                pass
+        
+        logger.info(f'Usuario {user_id} confirmó cita y salió de cola (era #{position})')
+    else:
+        await update.message.reply_text(
+            ' Error al remover de la cola.\n'
+            'Intenta de nuevo o contacta al admin.'
+        )
+
+
+async def cancelar_cola_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Usuario cancela su participación en la cola"""
+    from main import citas_queue, usuarios_activos
+    
+    user_id = update.effective_user.id
+    position = citas_queue.get_position(user_id)
+    
+    if position <= 0:
+        await update.message.reply_text(
+            ' **No estás en la cola**\n\n'
+            'No tienes monitoreo activo.'
+        )
+        return
+    
+    # Remover de la cola
+    removed = citas_queue.remove_user(user_id)
+    
+    if removed:
+        # Remover de usuarios activos
+        if user_id in usuarios_activos:
+            del usuarios_activos[user_id]
+        
+        stats = citas_queue.get_queue_stats()
+        
+        await update.message.reply_text(
+            ' **Cancelado exitosamente**\n\n'
+            f'Has sido removido de la cola (eras #{position})\n'
+            f'Tu monitoreo ha sido desactivado\n\n'
+            f' Usuarios restantes: {stats["en_espera"]}\n\n'
+            'Puedes volver a registrarte cuando quieras con /registrar'
+        )
+        
+        logger.info(f'Usuario {user_id} canceló participación en cola (era #{position})')
+    else:
+        await update.message.reply_text(' Error al cancelar. Intenta de nuevo.')
