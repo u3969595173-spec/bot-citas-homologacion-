@@ -1,6 +1,6 @@
 ﻿
 async def post_shutdown(application: Application):
-    `Detener el monitor al cerrar el bot`
+    """Detener el monitor al cerrar el bot"""
     global monitor
     
     if monitor:
@@ -450,5 +450,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
 
