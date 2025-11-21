@@ -146,23 +146,34 @@ async def registrar(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Estos datos se usarÃ¡n para reservar automÃ¡ticamente cuando aparezca una cita."
         )
         return
-    
-    # Registrar usuario
+
+    # Agregar a la cola de la base de datos
+    position = citas_queue.add_user(user_id)
+    if position == 0:
+        await update.message.reply_text(
+            " **Error al agregar a la cola**\n\n"
+            "Por favor, intenta de nuevo más tarde."
+        )
+        return
+
+    # Registrar usuario en memoria
     usuarios_activos[user_id] = {
         'username': username,
         'fecha_registro': datetime.now().isoformat(),
         'notified': False
     }
-    
-    logger.info(f"Usuario {username} ({user_id}) registrado para monitoreo")
-    
+
+    logger.info(f"Usuario {username} ({user_id}) registrado para monitoreo - Posición en cola: {position}")
+
     await update.message.reply_text(
-        f"âœ… Â¡Registrado correctamente!\n\n"
-        f"ðŸ” El bot estÃ¡ monitoreando citas 24/7.\n"
-        f"ðŸ“¬ RecibirÃ¡s notificaciÃ³n instantÃ¡nea cuando aparezca una cita.\n"
-        f"ðŸ¤– El bot intentarÃ¡ reservarla automÃ¡ticamente con tus datos.\n\n"
-        f"ðŸ’¡ El bot revisa cada 0.1 segundos (10 veces por segundo).\n\n"
-        f"Usa /status para ver el estado actual."
+        f" ¡Registrado correctamente!\n\n"
+        f" **Posición en cola: #{position}**\n\n"
+        f" El bot está monitoreando citas 24/7.\n"
+        f" Recibirás notificación instantánea cuando aparezca una cita.\n"
+        f" El bot intentará reservarla automáticamente con tus datos.\n\n"
+        f" El bot revisa cada 0.1 segundos (10 veces por segundo).\n\n"
+        f" Usa /cola para ver tu posición actualizada.\n"
+        f" Usa /status para ver el estado actual."
     )
 
 
@@ -452,6 +463,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
 
 
