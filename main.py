@@ -1,13 +1,4 @@
-﻿
-async def post_shutdown(application: Application):
-    """Detener el monitor al cerrar el bot"""
-    global monitor
-    
-    if monitor:
-        logger.info(' Cerrando bot...')
-        monitor.stop_monitoring()
-        logger.info(' Monitor detenido')
-"""
+﻿"""
 Bot de Telegram para Citas de HomologaciÃ³n
 Sistema de monitoreo y auto-reserva de citas
 """
@@ -397,6 +388,17 @@ async def post_init(application: Application):
     asyncio.create_task(monitor.start_monitoring())
     
     logger.info("âœ… Bot completamente inicializado")
+
+
+
+async def post_shutdown(application: Application):
+    """Detener el monitor al cerrar el bot"""
+    global monitor
+    
+    if monitor:
+        logger.info(' Cerrando bot...')
+        monitor.stop_monitoring()
+        logger.info(' Monitor detenido')
 
 
 def main():
