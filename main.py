@@ -399,7 +399,11 @@ def main():
         return
     
     # Crear aplicaciÃ³n
-    application = Application.builder().token(TELEGRAM_BOT_TOKEN).post_init(post_init).build()
+    application = Application.builder().token(TELEGRAM_BOT_TOKEN).post_init(post_init).post_shutdown(post_shutdown).build()
+
+    # Iniciar health server para Render
+    logger.info('Iniciando health server...')
+    start_health_server()
     
     # Handler de conversaciÃ³n para registro de datos
     datos_handler = ConversationHandler(
