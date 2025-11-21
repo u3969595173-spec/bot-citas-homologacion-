@@ -1,5 +1,6 @@
-ï»¿"""
-GestiÃ³n de datos de usuarios para reservas automÃ¡ticas
+# -*- coding: utf-8 -*-
+"""
+Gestión de datos de usuarios para reservas automáticas
 Ahora usa PostgreSQL para persistencia
 """
 

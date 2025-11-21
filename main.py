@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Bot de Telegram para Citas de Homologación
 Sistema de monitoreo y auto-reserva de citas

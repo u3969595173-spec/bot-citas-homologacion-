@@ -1,4 +1,5 @@
-Ôªø"""
+# -*- coding: utf-8 -*-
+"""
 Cliente HTTP multiplataforma con bypass SSL - OPTIMIZADO PARA VELOCIDAD
 Compatible con Windows y Linux usando curl
 """
@@ -13,15 +14,15 @@ import atexit
 logger = logging.getLogger(__name__)
 
 class HTTPClient:
-    """Cliente HTTP que usa curl (Windows y Linux) - ULTRA R√ÅPIDO"""
+    """Cliente HTTP que usa curl (Windows y Linux) - ULTRA R¡PIDO"""
     
-    # Configuraci√≥n OpenSSL compartida (singleton)
+    # ConfiguraciÛn OpenSSL compartida (singleton)
     _openssl_conf = None
     _initialized = False
     
     @classmethod
     def _init_openssl_config(cls):
-        """Crear configuraci√≥n OpenSSL una sola vez"""
+        """Crear configuraciÛn OpenSSL una sola vez"""
         if cls._initialized:
             return
             
@@ -64,7 +65,7 @@ CipherString = DEFAULT@SECLEVEL=0
     
     @staticmethod
     def get(url):
-        """Petici√≥n GET ultra r√°pida"""
+        """PeticiÛn GET ultra r·pida"""
         HTTPClient._init_openssl_config()
         
         try:
@@ -78,10 +79,10 @@ CipherString = DEFAULT@SECLEVEL=0
                     '-s',  # Silent
                     '-k',  # Ignorar SSL
                     '--max-time', '3',  # Timeout 3s (antes 10s)
-                    '--connect-timeout', '2',  # Conexi√≥n 2s
-                    '--keepalive-time', '10',  # Mantener conexi√≥n viva
+                    '--connect-timeout', '2',  # ConexiÛn 2s
+                    '--keepalive-time', '10',  # Mantener conexiÛn viva
                     '--no-buffer',  # Sin buffering
-                    '--compressed',  # Aceptar compresi√≥n
+                    '--compressed',  # Aceptar compresiÛn
                     '--tlsv1.2',
                     '--ciphers', 'DEFAULT@SECLEVEL=0',
                     '-H', 'User-Agent: Mozilla/5.0',
@@ -107,7 +108,7 @@ CipherString = DEFAULT@SECLEVEL=0
                 return None
                 
         except subprocess.TimeoutExpired:
-            logger.warning("Timeout en petici√≥n HTTP")
+            logger.warning("Timeout en peticiÛn HTTP")
             return None
         except Exception as e:
             logger.error(f"Error curl: {e}")
