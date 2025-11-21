@@ -47,3 +47,8 @@ class CitasQueue:
     def get_stats(self):
         """Obtener estadísticas de la cola"""
         return db.get_queue_stats()
+
+    def get_queue_stats(self):
+        """Alias para get_stats() - compatibilidad"""
+        return self.get_stats()
+
