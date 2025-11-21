@@ -462,7 +462,16 @@ def main():
 
 
 if __name__ == '__main__':
+    import random
+    import time
+    
+    # Delay aleatorio para evitar conflicto entre múltiples instancias
+    delay = random.uniform(0, 60)
+    logger.info(f" Esperando {delay:.1f}s para evitar conflictos...")
+    time.sleep(delay)
+    
     main()
+
 
 
 
