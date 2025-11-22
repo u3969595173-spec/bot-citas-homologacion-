@@ -1,6 +1,7 @@
+ï»¿# -*- coding: utf-8 -*-
 # -*- coding: utf-8 -*-
 """
-Sistema de cola FIFO para asignación justa de citas
+Sistema de cola FIFO para asignacin justa de citas
 Ahora usa PostgreSQL para persistencia
 """
 
@@ -17,7 +18,7 @@ class CitasQueue:
     def add_user(self, user_id):
         """Agregar usuario a la cola"""
         position = db.add_to_queue(user_id)
-        logger.info(f"Usuario {user_id} agregado a cola en posición {position}")
+        logger.info(f"Usuario {user_id} agregado a cola en posicin {position}")
         return position
     
     def get_next_user(self):
@@ -42,14 +43,15 @@ class CitasQueue:
         return success
     
     def get_position(self, user_id):
-        """Obtener posición de un usuario en la cola"""
+        """Obtener posicin de un usuario en la cola"""
         return db.get_queue_position(user_id)
     
     def get_stats(self):
-        """Obtener estadísticas de la cola"""
+        """Obtener estadsticas de la cola"""
         return db.get_queue_stats()
 
     def get_queue_stats(self):
         """Alias para get_stats() - compatibilidad"""
         return self.get_stats()
+
 
