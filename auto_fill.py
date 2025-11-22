@@ -367,3 +367,4 @@ if __name__ == "__main__":
     print(f"Resultado: {result}")
     print(f"{'='*50}")
 
+
