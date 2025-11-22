@@ -1,3 +1,4 @@
+ï»¿# -*- coding: utf-8 -*-
 """
 Bot de Telegram para Citas de HomologaciÃ³n
 Sistema de monitoreo y auto-reserva de citas
@@ -62,26 +63,26 @@ async def cita_disponible_handler(dates):
                 'phone': user_info['telefono']
             }
             
-            #  INTENTAR AUTO-LLENADO AUTOMÁTICO
+            #  INTENTAR AUTO-LLENADO AUTOMï¿½TICO
             logger.info(f" Iniciando auto-llenado para usuario {user_id}")
             
             try:
                 result = await auto_fill_appointment(fill_data, first_date)
                 
                 if result['success']:
-                    #  ÉXITO - Reserva completada automáticamente
+                    #  ï¿½XITO - Reserva completada automï¿½ticamente
                     confirmation = result.get('confirmation', 'COMPLETADO')
                     
                     success_msg = (
-                        f" **¡RESERVA COMPLETADA AUTOMÁTICAMENTE!**\n\n"
+                        f" **ï¿½RESERVA COMPLETADA AUTOMï¿½TICAMENTE!**\n\n"
                         f" Fecha: {first_date}\n"
-                        f" Confirmación: {confirmation}\n\n"
+                        f" Confirmaciï¿½n: {confirmation}\n\n"
                         f" **Tus datos:**\n"
                         f" Nombre: {fill_data['name']}\n"
                         f" Documento: {fill_data['document']}\n"
                         f" Email: {fill_data['email']}\n"
-                        f" Teléfono: {fill_data['phone']}\n\n"
-                        f" Revisa tu email para más detalles."
+                        f" Telï¿½fono: {fill_data['phone']}\n\n"
+                        f" Revisa tu email para mï¿½s detalles."
                     )
                     
                     await application.bot.send_message(chat_id=user_id, text=success_msg)
@@ -90,7 +91,7 @@ async def cita_disponible_handler(dates):
                     screenshot_path = f"confirmation_{fill_data['document']}.png"
                     try:
                         if os.path.exists(screenshot_path):
-                            await application.bot.send_photo(chat_id=user_id, photo=open(screenshot_path, 'rb'), caption=" Captura de la confirmación")
+                            await application.bot.send_photo(chat_id=user_id, photo=open(screenshot_path, 'rb'), caption=" Captura de la confirmaciï¿½n")
                     except:
                         pass
                     
@@ -120,9 +121,9 @@ async def cita_disponible_handler(dates):
                     except:
                         pass
             
-            #  RESPALDO MANUAL - Si auto-llenado falló
+            #  RESPALDO MANUAL - Si auto-llenado fallï¿½
             mensaje = (
-                f" **¡CITA DISPONIBLE!**\n\n"
+                f" **ï¿½CITA DISPONIBLE!**\n\n"
                 f" El auto-llenado no pudo completarse\n"
                 f"Por favor, reserva manualmente:\n\n"
                 f" Fechas: {', '.join(date_strings)}\n\n"
@@ -130,8 +131,8 @@ async def cita_disponible_handler(dates):
                 f" Nombre: {fill_data['name']}\n"
                 f" Documento: {fill_data['document']}\n"
                 f" Email: {fill_data['email']}\n"
-                f" Teléfono: {fill_data['phone']}\n\n"
-                f" **ACTÚA RÁPIDO**\n\n"
+                f" Telï¿½fono: {fill_data['phone']}\n\n"
+                f" **ACTï¿½A Rï¿½PIDO**\n\n"
                 f" https://citaprevia.ciencia.gob.es/qmaticwebbooking/#/"
             )
             
@@ -529,6 +530,7 @@ if __name__ == '__main__':
     time.sleep(delay)
     
     main()
+
 
 
 

@@ -19,6 +19,6 @@ pip install -r requirements.txt
 
 echo " Instalando navegador Chromium para Playwright..."
 python -m playwright install chromium
-python -m playwright install-deps chromium
 
 echo " Build completado"
+
