@@ -620,7 +620,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     
     elif data == "btn_cola":
-        position = citas_queue.get_user_position(user_id)
+        position = citas_queue.get_position(user_id)
         if position:
             keyboard = [[InlineKeyboardButton("📊 Ver Estado", callback_data="btn_status")]]
             reply_markup = InlineKeyboardMarkup(keyboard)
