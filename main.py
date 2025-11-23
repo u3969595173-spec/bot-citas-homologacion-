@@ -7,8 +7,8 @@ Sistema de monitoreo y auto-reserva de citas
 import asyncio
 import logging
 import os
-from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes, ConversationHandler, MessageHandler, filters
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Application, CommandHandler, ContextTypes, ConversationHandler, MessageHandler, filters, CallbackQueryHandler
 from datetime import datetime
 
 # Configurar OpenSSL para permitir renegociación legacy
@@ -222,17 +222,24 @@ async def registrar(update: Update, context: ContextTypes.DEFAULT_TYPE):
         'notified': False
     }
 
-    logger.info(f"Usuario {username} ({user_id}) registrado para monitoreo - Posici�n en cola: {position}")
+    logger.info(f"Usuario {username} ({user_id}) registrado para monitoreo - Posición en cola: {position}")
+
+    keyboard = [
+        [InlineKeyboardButton("📊 Ver Estado", callback_data="btn_status")],
+        [InlineKeyboardButton("📋 Mi Posición en Cola", callback_data="btn_cola")],
+        [InlineKeyboardButton("🔴 Pausar Monitoreo", callback_data="btn_stop")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
 
     await update.message.reply_text(
-        f" �Registrado correctamente!\n\n"
-        f" **Posici�n en cola: #{position}**\n\n"
-        f" El bot est� monitoreando citas 24/7.\n"
-        f" Recibir�s notificaci�n instant�nea cuando aparezca una cita.\n"
-        f" El bot intentar� reservarla autom�ticamente con tus datos.\n\n"
-        f" El bot revisa cada 0.1 segundos (10 veces por segundo).\n\n"
-        f" Usa /cola para ver tu posici�n actualizada.\n"
-        f" Usa /status para ver el estado actual."
+        f"✅ ¡Registrado correctamente!\n\n"
+        f"📍 **Posición en cola: #{position}**\n\n"
+        f"🔍 El bot está monitoreando citas 24/7.\n"
+        f"📱 Recibirás notificación instantánea cuando aparezca una cita.\n"
+        f"🤖 El bot intentará reservarla automáticamente con tus datos.\n\n"
+        f"⚡ El bot revisa cada 0.1 segundos (10 veces por segundo).\n\n"
+        f"👇 Acciones rápidas:",
+        reply_markup=reply_markup
     )
 
 
@@ -258,6 +265,16 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     user_id = update.effective_user.id
     is_registered = user_id in usuarios_activos
+    has_data = user_data_manager.has_complete_data(user_id)
+    
+    keyboard = []
+    if has_data and not is_registered:
+        keyboard.append([InlineKeyboardButton("🟢 Activar Monitoreo", callback_data="btn_registrar")])
+    if is_registered:
+        keyboard.append([InlineKeyboardButton("📋 Ver Mi Posición", callback_data="btn_cola")])
+    keyboard.append([InlineKeyboardButton("🏠 Menú Principal", callback_data="btn_start")])
+    
+    reply_markup = InlineKeyboardMarkup(keyboard)
     
     await update.message.reply_text(
         f"📊 **Estado del Monitor**\n\n"
@@ -267,7 +284,8 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🕐 Último check: {stats['last_check']}\n"
         f"👤 Tu estado: {'✅ Registrado' if is_registered else '❌ No registrado'}\n\n"
         f"👥 Usuarios activos: {len(usuarios_activos)}\n\n"
-        f"💡 El bot revisa la API cada {stats['current_interval']}s"
+        f"💡 El bot revisa la API cada {stats['current_interval']}s",
+        reply_markup=reply_markup
     )
 
 
@@ -471,6 +489,198 @@ async def post_shutdown(application: Application):
         logger.info(' Monitor detenido')
 
 
+async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Manejar clicks en botones inline"""
+    query = update.callback_query
+    await query.answer()
+    
+    user_id = query.from_user.id
+    data = query.data
+    
+    if data == "btn_datos":
+        await query.message.reply_text(
+            "📝 **Registro de Datos Personales**\n\n"
+            "Usa el comando /datos para iniciar el proceso de registro.\n\n"
+            "Te pediré:\n"
+            "• Nombre\n"
+            "• Apellido\n"
+            "• NIE/DNI/Pasaporte\n"
+            "• Email\n"
+            "• Teléfono\n\n"
+            "Escribe /datos cuando estés listo."
+        )
+    
+    elif data == "btn_mistats":
+        user_data = user_data_manager.get_user_data(user_id)
+        if user_data:
+            keyboard = [[InlineKeyboardButton("✏️ Modificar Datos", callback_data="btn_datos")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await query.message.reply_text(
+                f"📋 **Tus Datos Registrados**\n\n"
+                f"• Nombre: {user_data['nombre']} {user_data['apellido']}\n"
+                f"• Documento: {user_data['documento']}\n"
+                f"• Email: {user_data['email']}\n"
+                f"• Teléfono: {user_data['telefono']}\n\n"
+                f"✅ Datos completos para auto-reserva",
+                reply_markup=reply_markup
+            )
+        else:
+            await query.message.reply_text("❌ No tienes datos registrados. Usa /datos")
+    
+    elif data == "btn_registrar":
+        if not user_data_manager.has_complete_data(user_id):
+            keyboard = [[InlineKeyboardButton("📝 Registrar Datos", callback_data="btn_datos")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await query.message.reply_text(
+                "⚠️ **Necesitas registrar tus datos primero**\n\n"
+                "Usa el botón de abajo para comenzar:",
+                reply_markup=reply_markup
+            )
+            return
+        
+        username = query.from_user.username or query.from_user.first_name
+        position = citas_queue.add_user(user_id)
+        
+        if position is None or position < 0:
+            await query.message.reply_text(
+                "❌ **Error al agregar a la cola**\n\n"
+                "Por favor, intenta de nuevo más tarde."
+            )
+            return
+        
+        if position == 0:
+            position = 1
+        
+        usuarios_activos[user_id] = {
+            'username': username,
+            'fecha_registro': datetime.now().isoformat(),
+            'notified': False
+        }
+        
+        keyboard = [
+            [InlineKeyboardButton("📊 Ver Estado", callback_data="btn_status")],
+            [InlineKeyboardButton("📋 Mi Posición", callback_data="btn_cola")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.message.reply_text(
+            f"✅ ¡Registrado correctamente!\n\n"
+            f"📍 **Posición en cola: #{position}**\n\n"
+            f"🔍 El bot está monitoreando 24/7\n"
+            f"📱 Te avisaremos instantáneamente",
+            reply_markup=reply_markup
+        )
+    
+    elif data == "btn_stop":
+        if user_id in usuarios_activos:
+            del usuarios_activos[user_id]
+            keyboard = [[InlineKeyboardButton("🟢 Reactivar", callback_data="btn_registrar")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await query.message.reply_text(
+                "🔴 Monitoreo detenido\n\n"
+                "Usa el botón de abajo para reactivarlo:",
+                reply_markup=reply_markup
+            )
+        else:
+            await query.message.reply_text("⚠️ No estabas registrado")
+    
+    elif data == "btn_status":
+        if not monitor or not monitor.running:
+            await query.message.reply_text("❌ El monitor no está activo")
+            return
+        
+        stats = monitor.get_stats()
+        now = datetime.now()
+        
+        if 12 <= now.hour < 14:
+            modo = "⚡ MODO TURBO (0.3s)"
+        elif now.hour == 11 and now.minute >= 55:
+            modo = "🔥 PRE-TURBO (1s)"
+        else:
+            modo = "💤 Modo normal (30s)"
+        
+        is_registered = user_id in usuarios_activos
+        
+        keyboard = [[InlineKeyboardButton("🏠 Menú Principal", callback_data="btn_start")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.message.reply_text(
+            f"📊 **Estado del Monitor**\n\n"
+            f"🔍 Estado: {'✅ Activo' if stats['running'] else '❌ Inactivo'}\n"
+            f"⏱ Modo: {modo}\n"
+            f"🔢 Checks: {stats['checks_count']}\n"
+            f"👤 Tu estado: {'✅ Registrado' if is_registered else '❌ No registrado'}\n"
+            f"👥 Usuarios activos: {len(usuarios_activos)}",
+            reply_markup=reply_markup
+        )
+    
+    elif data == "btn_cola":
+        position = citas_queue.get_user_position(user_id)
+        if position:
+            keyboard = [[InlineKeyboardButton("📊 Ver Estado", callback_data="btn_status")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await query.message.reply_text(
+                f"📋 **Tu Posición en la Cola**\n\n"
+                f"📍 Posición: #{position}\n\n"
+                f"⏳ Serás procesado cuando aparezca una cita",
+                reply_markup=reply_markup
+            )
+        else:
+            keyboard = [[InlineKeyboardButton("🟢 Activar Monitoreo", callback_data="btn_registrar")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await query.message.reply_text(
+                "❌ No estás en la cola\n\n"
+                "Activa el monitoreo:",
+                reply_markup=reply_markup
+            )
+    
+    elif data == "btn_ayuda":
+        keyboard = [[InlineKeyboardButton("🏠 Menú Principal", callback_data="btn_start")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.message.reply_text(
+            "❓ **Ayuda - Cómo funciona**\n\n"
+            "1️⃣ Registra tus datos con /datos\n"
+            "2️⃣ Activa el monitoreo con /registrar\n"
+            "3️⃣ El bot revisa cada 0.1 segundos\n"
+            "4️⃣ Te avisa instantáneamente cuando aparezca cita\n"
+            "5️⃣ Intenta reservar automáticamente\n\n"
+            "📋 **Comandos útiles:**\n"
+            "/datos - Registrar información\n"
+            "/registrar - Activar monitoreo\n"
+            "/status - Ver estado\n"
+            "/mistats - Ver mis datos\n"
+            "/cola - Mi posición\n"
+            "/stop - Detener monitoreo",
+            reply_markup=reply_markup
+        )
+    
+    elif data == "btn_start":
+        has_data = user_data_manager.has_complete_data(user_id)
+        is_active = user_id in usuarios_activos
+        
+        keyboard = []
+        if not has_data:
+            keyboard.append([InlineKeyboardButton("📝 Registrar Datos", callback_data="btn_datos")])
+        else:
+            keyboard.append([InlineKeyboardButton("👤 Ver Mis Datos", callback_data="btn_mistats")])
+        
+        if has_data and not is_active:
+            keyboard.append([InlineKeyboardButton("🟢 Activar Monitoreo", callback_data="btn_registrar")])
+        elif is_active:
+            keyboard.append([InlineKeyboardButton("🔴 Detener Monitoreo", callback_data="btn_stop")])
+        
+        keyboard.append([InlineKeyboardButton("📊 Ver Estado", callback_data="btn_status")])
+        keyboard.append([InlineKeyboardButton("❓ Ayuda", callback_data="btn_ayuda")])
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.message.reply_text(
+            "🏠 **Menú Principal**\n\n"
+            "👇 Selecciona una opción:",
+            reply_markup=reply_markup
+        )
+
+
 def main():
     """Iniciar el bot"""
     global application
@@ -507,6 +717,9 @@ def main():
     application.add_handler(CommandHandler("mistats", mistats))
     application.add_handler(CommandHandler("stop", stop_monitoring))
     application.add_handler(CommandHandler("admin", admin_stats))
+    
+    # Registrar handler de botones
+    application.add_handler(CallbackQueryHandler(button_callback))
     application.add_handler(CommandHandler("pausar", pausar_command))
     application.add_handler(CommandHandler("reanudar", reanudar_command))
     application.add_handler(CommandHandler("test", test_command))
