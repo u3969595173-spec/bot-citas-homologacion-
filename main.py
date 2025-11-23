@@ -238,6 +238,7 @@ async def registrar(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"📱 Recibirás notificación instantánea cuando aparezca una cita.\n"
         f"🤖 El bot intentará reservarla automáticamente con tus datos.\n\n"
         f"⚡ El bot revisa cada 0.1 segundos (10 veces por segundo).\n\n"
+        f"📞 **Soporte:** +34 936 07 56 41\n\n"
         f"👇 Acciones rápidas:",
         reply_markup=reply_markup
     )
@@ -424,7 +425,8 @@ async def datos_telefono(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"• Email: {context.user_data['email']}\n"
         f"• Teléfono: {context.user_data['telefono']}\n\n"
         f"🤖 Ahora usa /registrar para activar el monitoreo.\n"
-        f"Cuando aparezca una cita, el bot intentará reservarla automáticamente con estos datos."
+        f"Cuando aparezca una cita, el bot intentará reservarla automáticamente con estos datos.\n\n"
+        f"📞 **Soporte:** +34 936 07 56 41"
     )
     
     # Limpiar contexto
@@ -461,7 +463,8 @@ async def mistats(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"• Email: {data['email']}\n"
         f"• Teléfono: {data['telefono']}\n\n"
         f"✅ Datos completos para auto-reserva\n\n"
-        f"Para modificar tus datos, usa /datos de nuevo."
+        f"Para modificar tus datos, usa /datos de nuevo.\n\n"
+        f"📞 **Soporte:** +34 936 07 56 41"
     )
 
 
@@ -650,7 +653,8 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "/status - Ver estado\n"
             "/mistats - Ver mis datos\n"
             "/cola - Mi posición\n"
-            "/stop - Detener monitoreo",
+            "/stop - Detener monitoreo\n\n"
+            "📞 **Soporte:** +34 936 07 56 41",
             reply_markup=reply_markup
         )
     
