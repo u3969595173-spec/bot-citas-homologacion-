@@ -178,6 +178,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"📝 Tus datos: {data_status}\n\n"
         f"💡 El sistema revisa:\n"
         f"• Cada 0.1 segundos (modo ULTRA - 10 veces/seg)\n\n"
+        f"📞 **Soporte:** +34 936 07 56 41\n\n"
         f"⚠️ Registra tus datos con /datos antes de activar el monitoreo.\n\n"
         f"User ID: `{user_id}`"
     )
@@ -197,7 +198,8 @@ async def registrar(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "• NIE/DNI/Pasaporte\n"
             "• Email\n"
             "• Teléfono\n\n"
-            "Estos datos se usarán para reservar automáticamente cuando aparezca una cita."
+            "Estos datos se usarán para reservar automáticamente cuando aparezca una cita.\n\n"
+            "📞 **Soporte:** +34 936 07 56 41"
         )
         return
 
