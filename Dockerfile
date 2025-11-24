@@ -4,7 +4,7 @@ FROM mcr.microsoft.com/playwright/python:v1.48.0-jammy
 WORKDIR /app
 
 # Instalar dependencias del sistema para PostgreSQL
-RUN apt-get update && apt-get install -y libpq-dev && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y libpq-dev build-essential && rm -rf /var/lib/apt/lists/*
 
 # Copiar requirements
 COPY requirements.txt .
