@@ -41,7 +41,7 @@ NOMBRE, APELLIDO, DOCUMENTO, EMAIL, TELEFONO = range(5)
 
 
 async def cita_disponible_handler(dates):
-    """Callback cuando se detecta cita disponible - Sistema FIFO (cola)"""
+    """Callback cuando se detecta cita disponible - Sistema FIFO (cola) ULTRA-RÁPIDO"""
     logger.warning(f"🎯 CITA DISPONIBLE: {dates}")
     
     date_strings = [d["date"] if isinstance(d, dict) else str(d) for d in dates]
@@ -69,16 +69,16 @@ async def cita_disponible_handler(dates):
             citas_queue.remove_user(next_user_id)  # Sacarlo de la cola
             return
         
-        # Preparar datos para auto-llenado
+        # Preparar datos para auto-llenado (formato optimizado para httpx)
         fill_data = {
-            'name': f"{user_info['nombre']} {user_info['apellido']}",
+            'nombre': f"{user_info['nombre']} {user_info['apellido']}",  # Nombre completo
             'document': user_info['documento'],
             'email': user_info['email'],
             'phone': user_info['telefono']
         }
         
-        # 🤖 INTENTAR AUTO-LLENADO AUTOMÁTICO
-        logger.info(f"🤖 Iniciando auto-llenado para {fill_data['name']}")
+        # 🤖 INTENTAR AUTO-LLENADO AUTOMÁTICO (ULTRA-RÁPIDO)
+        logger.info(f"🤖 Iniciando auto-llenado para {fill_data['nombre']}")
         
         try:
             result = await auto_fill_appointment(fill_data, first_date)
@@ -94,7 +94,7 @@ async def cita_disponible_handler(dates):
                     f"📅 Fecha: {first_date}\n"
                     f"🔢 Confirmación: **{confirmation}**\n\n"
                     f"📋 **Tus datos:**\n"
-                    f"👤 Nombre: {fill_data['name']}\n"
+                    f"👤 Nombre: {fill_data['nombre']}\n"
                     f"🆔 Documento: {fill_data['document']}\n"
                     f"📧 Email: {fill_data['email']}\n"
                     f"📞 Teléfono: {fill_data['phone']}\n\n"
@@ -131,7 +131,7 @@ async def cita_disponible_handler(dates):
                             await application.bot.send_photo(
                                 chat_id=ADMIN_USER_ID,
                                 photo=open(screenshot_path, 'rb'),
-                                caption=f"📸 Confirmación - {fill_data['name']}"
+                                caption=f"📸 Confirmación - {fill_data['nombre']}"
                             )
                         except Exception as e:
                             logger.error(f"Error enviando screenshot al admin: {e}")
@@ -164,7 +164,7 @@ async def cita_disponible_handler(dates):
                             await application.bot.send_photo(
                                 chat_id=ADMIN_USER_ID,
                                 photo=open(screenshot_path, 'rb'),
-                                caption=f"❌ Error auto-llenado - {fill_data['name']}"
+                                caption=f"❌ Error auto-llenado - {fill_data['nombre']}"
                             )
                         except Exception as e:
                             logger.error(f"Error enviando screenshot al admin: {e}")
@@ -180,7 +180,7 @@ async def cita_disponible_handler(dates):
                 try:
                     await application.bot.send_message(
                         chat_id=ADMIN_USER_ID,
-                        text=f"❌ **ERROR CRÍTICO AUTO-LLENADO**\n\n👤 {fill_data['name']} (ID: {next_user_id})\n📅 {first_date}\n⚠️ {str(e)[:200]}"
+                        text=f"❌ **ERROR CRÍTICO AUTO-LLENADO**\n\n👤 {fill_data['nombre']} (ID: {next_user_id})\n📅 {first_date}\n⚠️ {str(e)[:200]}"
                     )
                 except:
                     pass
