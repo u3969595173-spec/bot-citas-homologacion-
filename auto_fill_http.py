@@ -93,10 +93,14 @@ class HTTPAutoFiller:
         url = f"{self.base_url}/schedule/branches/{self.branch_id}/dates/{date}/times;servicePublicId={self.service_id};customSlotLength={self.custom_slot_length}"
         
         try:
+            logger.info(f"🔍 Consultando: {url}")
             result = await asyncio.to_thread(self._http_get, url)
             if result:
+                logger.info(f"✅ Respuesta times: {result}")
                 logger.debug(f"Horas disponibles: {len(result)} slots")
                 return result
+            else:
+                logger.warning(f"⚠️ API devolvió None o vacío para {date}")
             return []
         except Exception as e:
             logger.error(f"Error obteniendo horas: {e}")
