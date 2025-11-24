@@ -15,8 +15,8 @@ class FastHTTPAutoFiller:
     
     def __init__(self):
         self.base_url = "https://citaprevia.ciencia.gob.es/qmaticwebbooking/rest/schedule"
-        self.service_id = "4e5f0a7d-d72c-472c-b1f6-1c46034b5c40"
-        self.branch_id = "40c40c84-f972-4eae-8c8f-e2d7f4e08c8b"
+        self.service_id = "e97539664874283b583f0ff0b25d1e34f0f14e083d59fb10b2dafb76e4544019"
+        self.branch_id = "7c2c5344f7ec051bc265995282e38698f770efab83ed9de0f9378d102f700630"
         self.custom_slot_length = 10
         
         # Cliente HTTP reutilizable (conexión persistente) - PRE-CALENTADO
