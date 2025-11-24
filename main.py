@@ -85,9 +85,10 @@ async def cita_disponible_handler(dates):
             
             if result['success']:
                 # ✅ ÉXITO - Reserva completada automáticamente
-                confirmation = result.get('confirmation', 'COMPLETADO')
+                confirmation = result.get('confirmation')
                 screenshot_path = result.get('screenshot', '')
                 
+                # 📤 ENVIAR AL USUARIO: Número + Screenshot
                 success_msg = (
                     f"🎉 **¡RESERVA COMPLETADA AUTOMÁTICAMENTE!**\n\n"
                     f"📅 Fecha: {first_date}\n"
@@ -103,7 +104,7 @@ async def cita_disponible_handler(dates):
                 
                 await application.bot.send_message(chat_id=next_user_id, text=success_msg)
                 
-                # Enviar screenshot si existe
+                # Enviar screenshot al usuario
                 if screenshot_path and os.path.exists(screenshot_path):
                     try:
                         await application.bot.send_photo(
@@ -114,7 +115,7 @@ async def cita_disponible_handler(dates):
                     except Exception as e:
                         logger.error(f"Error enviando screenshot al usuario: {e}")
                 
-                # Notificar admin con screenshot
+                # 📤 ENVIAR AL ADMIN: Número + Screenshot
                 if ADMIN_USER_ID:
                     admin_msg = (
                         f"✅ **AUTO-RESERVA EXITOSA**\n\n"
@@ -142,52 +143,47 @@ async def cita_disponible_handler(dates):
                 
                 logger.info(f"✅ Usuario {next_user_id} procesado exitosamente y removido de la cola")
                 return  # ✅ Éxito, terminar
+            else:
+                # ❌ AUTO-LLENADO FALLÓ - Solo notificar admin con screenshot
+                logger.error(f"❌ Auto-llenado falló: {result.get('message', 'Error desconocido')}")
+                screenshot_path = result.get('screenshot')
+                
+                if ADMIN_USER_ID:
+                    error_msg = (
+                        f"❌ **AUTO-LLENADO FALLÓ**\n\n"
+                        f"👤 {fill_data['name']}\n"
+                        f"🆔 ID: {next_user_id}\n"
+                        f"📅 Fecha: {first_date}\n"
+                        f"⚠️ Error: {result.get('message', 'Desconocido')[:200]}"
+                    )
+                    await application.bot.send_message(chat_id=ADMIN_USER_ID, text=error_msg)
+                    
+                    # Enviar screenshot de error solo al admin
+                    if screenshot_path and os.path.exists(screenshot_path):
+                        try:
+                            await application.bot.send_photo(
+                                chat_id=ADMIN_USER_ID,
+                                photo=open(screenshot_path, 'rb'),
+                                caption=f"❌ Error auto-llenado - {fill_data['name']}"
+                            )
+                        except Exception as e:
+                            logger.error(f"Error enviando screenshot al admin: {e}")
+                
+                # NO notificar al usuario, permanece en cola
+                logger.info(f"ℹ️ Usuario {next_user_id} permanece en cola (fallo auto-llenado)")
                 
         except Exception as e:
-            logger.error(f"❌ Error en auto-llenado: {e}")
-            # Enviar screenshot de error al admin si existe
-            if 'result' in locals() and result and 'screenshot' in result:
-                screenshot_path = result.get('screenshot')
-                if screenshot_path and os.path.exists(screenshot_path):
-                    try:
-                        await application.bot.send_photo(
-                            chat_id=ADMIN_USER_ID,
-                            photo=open(screenshot_path, 'rb'),
-                            caption=f"❌ Error auto-llenado\n👤 {fill_data['name']} (ID: {next_user_id})\n{str(e)[:200]}"
-                        )
-                    except:
-                        pass
-        
-        # 🔄 RESPALDO MANUAL - Si auto-llenado falló
-        logger.warning(f"⚠️ Auto-llenado falló para {next_user_id}, enviando notificación manual")
-        
-        mensaje = (
-            f"🎯 **¡CITA DISPONIBLE!**\n\n"
-            f"⚠️ El auto-llenado no pudo completarse.\n"
-            f"Por favor, **reserva manualmente AHORA**:\n\n"
-            f"📅 Fechas: {', '.join(date_strings)}\n\n"
-            f"📋 **Tus datos para copiar:**\n"
-            f"👤 Nombre: `{fill_data['name']}`\n"
-            f"🆔 Documento: `{fill_data['document']}`\n"
-            f"📧 Email: `{fill_data['email']}`\n"
-            f"📞 Teléfono: `{fill_data['phone']}`\n\n"
-            f"⚡ **¡ACTÚA RÁPIDO!**\n\n"
-            f"🔗 https://citaprevia.ciencia.gob.es/qmaticwebbooking/#/\n\n"
-            f"📞 **Soporte:** +34 936 07 56 41\n\n"
-            f"💡 Usa /confirmar cuando consigas la cita"
-        )
-        
-        await application.bot.send_message(chat_id=next_user_id, text=mensaje)
-        
-        # Notificar admin que se envió manual
-        if ADMIN_USER_ID:
-            await application.bot.send_message(
-                chat_id=ADMIN_USER_ID,
-                text=f"⚠️ **NOTIFICACIÓN MANUAL ENVIADA**\n\n👤 {fill_data['name']} (ID: {next_user_id})\n📅 {first_date}\n\n❌ Auto-llenado falló"
-            )
-        
-        # NO remover de la cola - darle oportunidad en la próxima cita
-        logger.info(f"ℹ️ Usuario {next_user_id} permanece en cola para próxima cita")
+            logger.error(f"❌ Error crítico en auto-llenado: {e}", exc_info=True)
+            
+            # Solo notificar al admin del error crítico
+            if ADMIN_USER_ID:
+                try:
+                    await application.bot.send_message(
+                        chat_id=ADMIN_USER_ID,
+                        text=f"❌ **ERROR CRÍTICO AUTO-LLENADO**\n\n👤 {fill_data['name']} (ID: {next_user_id})\n📅 {first_date}\n⚠️ {str(e)[:200]}"
+                    )
+                except:
+                    pass
         
     except Exception as e:
         logger.error(f"❌ Error procesando usuario {next_user_id}: {e}")

@@ -93,7 +93,16 @@ class CitasAutoFiller:
                 await browser.close()
                 
                 if result['success']:
-                    confirmation_num = result.get('confirmation', 'COMPLETADO')
+                    confirmation_num = result.get('confirmation')
+                    if not confirmation_num:
+                        logger.error("❌ No se pudo capturar el número de confirmación")
+                        return {
+                            'success': False,
+                            'message': 'Proceso completado pero no se capturó el número de confirmación',
+                            'screenshot': screenshot_path,
+                            'date': available_date
+                        }
+                    
                     logger.info(f"🎉 ¡RESERVA COMPLETADA! Nº: {confirmation_num}")
                     return {
                         'success': True,
@@ -273,20 +282,11 @@ class CitasAutoFiller:
                     'confirmation': confirmation_code
                 }
             else:
-                # Si no encuentra número, buscar mensaje de éxito
-                success_messages = await page.locator('text=/.*reserva.*éxito.*/i, text=/.*confirmad.*/i').count()
-                if success_messages > 0:
-                    return {
-                        'success': True,
-                        'message': 'Reserva completada',
-                        'confirmation': 'CONFIRMADO (sin número visible)'
-                    }
-            
-            return {
-                'success': True,
-                'message': 'Proceso completado (verificar screenshot)',
-                'confirmation': 'COMPLETADO'
-            }
+                logger.warning("⚠️ No se encontró número de confirmación")
+                return {
+                    'success': False,
+                    'message': 'No se pudo capturar el número de confirmación (verificar screenshot)'
+                }
             
         except Exception as e:
             logger.error(f"❌ Error confirmando reserva: {e}")
