@@ -20,7 +20,7 @@ from user_data import UserDataManager
 from health_server import start_health_server
 from daily_heartbeat import daily_heartbeat
 from queue_manager import CitasQueue
-from auto_fill import auto_fill_appointment
+from auto_fill_http import fill_appointment as auto_fill_appointment  # Versión HTTP rápida
 from commands_extra import pausar_command, reanudar_command, test_command, stats_command, cola_command, confirmar_cita_command, cancelar_cola_command
 
 # Configurar logging
