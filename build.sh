@@ -8,7 +8,7 @@ pip install --upgrade pip
 pip install -r requirements.txt
 
 echo "Instalando Playwright chromium..."
-playwright install chromium
+playwright install chromium chromium_headless_shell
 
 echo "Build completado"
 

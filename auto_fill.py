@@ -39,6 +39,7 @@ class CitasAutoFiller:
                 # Lanzar navegador en modo headless
                 browser = await p.chromium.launch(
                     headless=True,
+                    channel='chromium',
                     args=[
                         '--no-sandbox',
                         '--disable-setuid-sandbox',
