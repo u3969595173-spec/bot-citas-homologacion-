@@ -119,7 +119,7 @@ async def cita_disponible_handler(dates):
                 if ADMIN_USER_ID:
                     admin_msg = (
                         f"✅ **AUTO-RESERVA EXITOSA**\n\n"
-                        f"👤 {fill_data['name']}\n"
+                        f"👤 {fill_data['nombre']}\n"
                         f"🆔 ID: {next_user_id}\n"
                         f"📅 Fecha: {first_date}\n"
                         f"🔢 Confirmación: **{confirmation}**"
@@ -151,7 +151,7 @@ async def cita_disponible_handler(dates):
                 if ADMIN_USER_ID:
                     error_msg = (
                         f"❌ **AUTO-LLENADO FALLÓ**\n\n"
-                        f"👤 {fill_data['name']}\n"
+                        f"👤 {fill_data['nombre']}\n"
                         f"🆔 ID: {next_user_id}\n"
                         f"📅 Fecha: {first_date}\n"
                         f"⚠️ Error: {result.get('message', 'Desconocido')[:200]}"
