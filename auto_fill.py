@@ -63,6 +63,16 @@ class CitasAutoFiller:
                 # PASO 1: Servicio ya está seleccionado (verificar)
                 logger.info("✅ Servicio SASTU ya seleccionado")
                 
+                # Hacer clic en "Siguiente" para ir al calendario
+                try:
+                    next_button = page.locator('button:has-text("Siguiente"), button:has-text("Next")')
+                    if await next_button.count() > 0:
+                        await next_button.first.click()
+                        await asyncio.sleep(2)
+                        logger.info("➡️ Navegado al calendario")
+                except Exception as e:
+                    logger.warning(f"⚠️ No se encontró botón Siguiente: {e}")
+                
                 # PASO 2: Seleccionar fecha disponible
                 logger.info(f"📅 Buscando y seleccionando fecha {available_date}...")
                 result = await self._select_date(page, available_date)
@@ -134,9 +144,9 @@ class CitasAutoFiller:
     async def _select_date(self, page, target_date: str) -> Dict:
         """Selecciona la fecha disponible en el calendario usando selectores exactos"""
         try:
-            # Esperar que el calendario esté visible
-            await page.wait_for_selector('.v-date-picker-table', timeout=10000)
-            await asyncio.sleep(1)
+            # Esperar que el calendario esté visible (aumentar timeout)
+            await page.wait_for_selector('.v-date-picker-table', timeout=20000)
+            await asyncio.sleep(2)
             
             # Selector exacto: botón con name="YYYY-MM-DD" SIN clase "v-btn--disabled"
             date_selector = f'button[name="{target_date}"]:not(.v-btn--disabled)'
