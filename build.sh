@@ -1,29 +1,17 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 # Build script para Render
 
-set -e  # Exit on error
+set -e
 
-echo "🔧 Instalando dependencias del sistema..."
-apt-get update
-apt-get install -y libpq-dev gcc
-
-echo "🌐 Instalando dependencias para navegador headless..."
-apt-get install -y \
-    libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 \
-    libcups2 libdrm2 libdbus-1-3 libxkbcommon0 \
-    libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
-    libgbm1 libpango-1.0-0 libcairo2 libasound2 \
-    libatspi2.0-0 libxshmfence1
-
-echo "📦 Instalando dependencias de Python..."
+echo "Instalando dependencias de Python..."
 pip install --upgrade pip
 pip install -r requirements.txt
 
-echo "🎭 Instalando navegadores de Playwright..."
-playwright install chromium --with-deps
+echo "Instalando navegadores de Playwright..."
+playwright install chromium
 
-echo "✅ Verificando instalación de Playwright..."
-playwright install-deps
+echo "Instalando dependencias de sistema para Playwright..."
+playwright install-deps chromium
 
-echo "✅ Build completado exitosamente"
+echo "Build completado exitosamente"
 
