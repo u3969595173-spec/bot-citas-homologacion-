@@ -19,13 +19,29 @@ class FastHTTPAutoFiller:
         self.branch_id = "40c40c84-f972-4eae-8c8f-e2d7f4e08c8b"
         self.custom_slot_length = 10
         
-        # Cliente HTTP reutilizable (conexión persistente)
+        # Cliente HTTP reutilizable (conexión persistente) - PRE-CALENTADO
         self.client = httpx.AsyncClient(
-            timeout=httpx.Timeout(5.0, connect=2.0),
-            limits=httpx.Limits(max_keepalive_connections=5),
+            timeout=httpx.Timeout(3.0, connect=1.0),  # Timeouts más agresivos
+            limits=httpx.Limits(max_keepalive_connections=10, max_connections=20),
             http2=True,  # HTTP/2 para mayor velocidad
             verify=False  # Sin verificar SSL para máxima velocidad
         )
+        self._warmed_up = False
+    
+    async def warmup(self):
+        """PRE-CALENTAR conexión (DNS + SSL handshake) ANTES de que aparezca cita"""
+        if self._warmed_up:
+            return
+        
+        try:
+            logger.info("🔥 PRE-CALENTANDO conexión HTTP...")
+            # Hacer petición dummy para establecer conexión TCP + SSL
+            url = f"{self.base_url}/branches/{self.branch_id}/services"
+            await self.client.get(url)
+            self._warmed_up = True
+            logger.info("✅ Conexión PRE-CALENTADA (DNS + SSL listos)")
+        except Exception as e:
+            logger.warning(f"⚠️ Error pre-calentando: {e}")
     
     async def close(self):
         """Cerrar cliente HTTP"""
@@ -43,6 +59,9 @@ class FastHTTPAutoFiller:
             Dict con resultado
         """
         try:
+            # Asegurar conexión pre-calentada
+            await self.warmup()
+            
             logger.info(f"⚡ RESERVA RÁPIDA para {user_data.get('nombre', 'Usuario')}")
             
             # PASO 1: Obtener horas disponibles (usando cliente rápido)
@@ -157,14 +176,18 @@ class FastHTTPAutoFiller:
 # Instancia global (reutilizar cliente HTTP)
 _filler_instance = None
 
+async def _ensure_instance():
+    """Asegurar instancia global y pre-calentarla"""
+    global _filler_instance
+    if _filler_instance is None:
+        _filler_instance = FastHTTPAutoFiller()
+        await _filler_instance.warmup()
+    return _filler_instance
+
 async def fill_appointment(user_data: Dict, available_date: str) -> Dict:
     """
     Función principal para auto-llenar (versión ULTRA-RÁPIDA)
     Reutiliza conexión HTTP para máxima velocidad
     """
-    global _filler_instance
-    
-    if _filler_instance is None:
-        _filler_instance = FastHTTPAutoFiller()
-    
-    return await _filler_instance.fill_appointment(user_data, available_date)
+    filler = await _ensure_instance()
+    return await filler.fill_appointment(user_data, available_date)

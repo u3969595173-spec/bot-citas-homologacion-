@@ -519,6 +519,16 @@ async def post_init(application: Application):
     global monitor
     
     logger.info("Inicializando monitor de citas...")
+    
+    # 🔥 PRE-CALENTAR conexión HTTP (DNS + SSL) ANTES de empezar
+    logger.info("🔥 Pre-calentando conexión HTTP...")
+    try:
+        from auto_fill_http_fast import _ensure_instance
+        await _ensure_instance()
+        logger.info("✅ Conexión HTTP pre-calentada")
+    except Exception as e:
+        logger.warning(f"⚠️ No se pudo pre-calentar: {e}")
+    
     monitor = CitasMonitor(on_cita_available=cita_disponible_handler)
     
     # Iniciar monitor en background
