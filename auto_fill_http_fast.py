@@ -109,14 +109,11 @@ class FastHTTPAutoFiller:
     
     async def _get_available_times(self, date: str) -> list:
         """Obtener horas disponibles (rápido con httpx)"""
-        url = f"{self.base_url}/branches/{self.branch_id}/dates/{date}/times"
-        params = {
-            'servicePublicId': self.service_id,
-            'customSlotLength': self.custom_slot_length
-        }
+        # Usar ; como separador (formato de la API Qmatic)
+        url = f"{self.base_url}/branches/{self.branch_id}/dates/{date}/times;servicePublicId={self.service_id};customSlotLength={self.custom_slot_length}"
         
         try:
-            response = await self.client.get(url, params=params)
+            response = await self.client.get(url)
             response.raise_for_status()
             
             data = response.json()
