@@ -796,13 +796,29 @@ def main():
 if __name__ == '__main__':
     import random
     import time
+    import fcntl
+    import sys
     
-    # Delay aleatorio para evitar conflicto entre m�ltiples instancias
-    delay = random.uniform(0, 60)
-    logger.info(f" Esperando {delay:.1f}s para evitar conflictos...")
+    # File lock para prevenir múltiples instancias
+    lock_file = "/tmp/citasbot.lock"
+    try:
+        lock_fd = open(lock_file, 'w')
+        fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        logger.info("✅ Lock adquirido - Esta es la única instancia")
+    except IOError:
+        logger.error("❌ Otra instancia ya está corriendo - Terminando")
+        sys.exit(0)
+    
+    # Delay aleatorio como backup
+    delay = random.uniform(0, 5)
+    logger.info(f"⏱ Esperando {delay:.1f}s antes de iniciar...")
     time.sleep(delay)
     
-    main()
+    try:
+        main()
+    finally:
+        fcntl.flock(lock_fd, fcntl.LOCK_UN)
+        lock_fd.close()
 
 
 
