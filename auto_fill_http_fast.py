@@ -21,7 +21,7 @@ class FastHTTPAutoFiller:
         
         # Cliente HTTP reutilizable (conexión persistente) - PRE-CALENTADO
         self.client = httpx.AsyncClient(
-            timeout=httpx.Timeout(3.0, connect=1.0),  # Timeouts más agresivos
+            timeout=httpx.Timeout(1.5, connect=0.5),  # Timeouts ULTRA agresivos
             limits=httpx.Limits(max_keepalive_connections=10, max_connections=20),
             http2=True,  # HTTP/2 para mayor velocidad
             verify=False  # Sin verificar SSL para máxima velocidad
@@ -67,26 +67,36 @@ class FastHTTPAutoFiller:
             
             # Si no hay hora específica, intentar con horarios comunes primero
             if not time_slot:
-                # INTENTO 1: Horarios más probables (sin hacer GET)
-                common_times = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00"]
-                logger.info(f"⚡ MODO SNIPER: Intentando POST directo con horarios comunes...")
+                # INTENTO 1: SHOTGUN - Intentar TODOS los horarios EN PARALELO
+                common_times = ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", 
+                               "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
+                               "15:00", "15:30", "16:00", "16:30"]
+                logger.info(f"🎯 MODO SHOTGUN: Intentando {len(common_times)} horarios EN PARALELO...")
                 
-                for test_time in common_times:
-                    logger.info(f"🎯 Intentando {available_date} {test_time}...")
-                    appointment = await self._create_appointment(user_data, available_date, test_time)
-                    
-                    if appointment and appointment.get('publicId'):
-                        confirmation = appointment['publicId']
-                        logger.info(f"🎉 ¡CONSEGUIDA! {confirmation}")
+                # Crear todas las tareas POST en paralelo
+                tasks = [
+                    self._create_appointment(user_data, available_date, test_time)
+                    for test_time in common_times
+                ]
+                
+                # Ejecutar TODAS a la vez y esperar la primera que tenga éxito
+                results = await asyncio.gather(*tasks, return_exceptions=True)
+                
+                # Buscar primer éxito
+                for idx, result in enumerate(results):
+                    if isinstance(result, dict) and result.get('publicId'):
+                        confirmation = result['publicId']
+                        successful_time = common_times[idx]
+                        logger.info(f"🎉 ¡CONSEGUIDA con {successful_time}! {confirmation}")
                         return {
                             'success': True,
                             'message': '¡Reserva exitosa!',
                             'confirmation': confirmation,
                             'date': available_date,
-                            'time': test_time
+                            'time': successful_time
                         }
                 
-                # Si fallan todos, intentar GET como fallback
+                # Si todas fallaron, intentar GET como fallback
                 logger.info(f"🔍 Fallback: Consultando horas reales...")
                 times = await self._get_available_times(available_date)
                 
