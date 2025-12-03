@@ -47,6 +47,11 @@ async def cita_disponible_handler(dates):
     date_strings = [d["date"] if isinstance(d, dict) else str(d) for d in dates]
     first_date = date_strings[0] if date_strings else ""
     
+    # Extraer hora si está disponible en el objeto dates
+    first_time = None
+    if dates and isinstance(dates[0], dict) and 'time' in dates[0]:
+        first_time = dates[0]['time']
+    
     # 🔥 OBTENER SIGUIENTE USUARIO EN LA COLA (FIFO)
     next_user_id = citas_queue.get_next_user()
     
@@ -77,11 +82,12 @@ async def cita_disponible_handler(dates):
             'phone': user_info['telefono']
         }
         
-        # 🤖 INTENTAR AUTO-LLENADO AUTOMÁTICO (ULTRA-RÁPIDO)
+        # 🤖 INTENTAR AUTO-LLENADO AUTOMÁTICO (ULTRA-RÁPIDO CON HORA)
         logger.info(f"🤖 Iniciando auto-llenado para {fill_data['nombre']}")
         
         try:
-            result = await auto_fill_appointment(fill_data, first_date)
+            # Pasar hora si está disponible para POST directo
+            result = await auto_fill_appointment(fill_data, first_date, first_time)
             
             if result['success']:
                 # ✅ ÉXITO - Reserva completada automáticamente

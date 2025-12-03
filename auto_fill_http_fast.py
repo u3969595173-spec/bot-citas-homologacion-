@@ -47,13 +47,14 @@ class FastHTTPAutoFiller:
         """Cerrar cliente HTTP"""
         await self.client.aclose()
     
-    async def fill_appointment(self, user_data: Dict, available_date: str) -> Dict:
+    async def fill_appointment(self, user_data: Dict, available_date: str, time_slot: str = None) -> Dict:
         """
         Reservar cita de forma ultra-rápida
         
         Args:
             user_data: Datos del usuario
             available_date: Fecha en formato YYYY-MM-DD
+            time_slot: Hora específica (opcional, si no se pasa intenta obtener)
             
         Returns:
             Dict con resultado
@@ -62,25 +63,46 @@ class FastHTTPAutoFiller:
             # Asegurar conexión pre-calentada
             await self.warmup()
             
-            logger.info(f"⚡ RESERVA RÁPIDA para {user_data.get('nombre', 'Usuario')}")
+            logger.info(f"⚡ RESERVA ULTRA-RÁPIDA para {user_data.get('nombre', 'Usuario')}")
             
-            # PASO 1: Obtener horas disponibles (usando cliente rápido)
-            logger.info(f"🔍 Consultando horas para {available_date}...")
-            times = await self._get_available_times(available_date)
+            # Si no hay hora específica, intentar con horarios comunes primero
+            if not time_slot:
+                # INTENTO 1: Horarios más probables (sin hacer GET)
+                common_times = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00"]
+                logger.info(f"⚡ MODO SNIPER: Intentando POST directo con horarios comunes...")
+                
+                for test_time in common_times:
+                    logger.info(f"🎯 Intentando {available_date} {test_time}...")
+                    appointment = await self._create_appointment(user_data, available_date, test_time)
+                    
+                    if appointment and appointment.get('publicId'):
+                        confirmation = appointment['publicId']
+                        logger.info(f"🎉 ¡CONSEGUIDA! {confirmation}")
+                        return {
+                            'success': True,
+                            'message': '¡Reserva exitosa!',
+                            'confirmation': confirmation,
+                            'date': available_date,
+                            'time': test_time
+                        }
+                
+                # Si fallan todos, intentar GET como fallback
+                logger.info(f"🔍 Fallback: Consultando horas reales...")
+                times = await self._get_available_times(available_date)
+                
+                if not times:
+                    logger.error("❌ Sin horas disponibles")
+                    return {
+                        'success': False,
+                        'message': 'No hay horas disponibles (ya cogidas)'
+                    }
+                
+                time_slot = times[0].get('time', '')
+                logger.info(f"✅ Hora real: {time_slot}")
             
-            if not times:
-                logger.error("❌ Sin horas disponibles")
-                return {
-                    'success': False,
-                    'message': 'No hay horas disponibles'
-                }
-            
-            first_time = times[0].get('time', '')
-            logger.info(f"✅ Primera hora: {first_time}")
-            
-            # PASO 2: Crear reserva inmediatamente
-            logger.info("🚀 Creando reserva...")
-            appointment = await self._create_appointment(user_data, available_date, first_time)
+            # POST con hora conocida
+            logger.info(f"🚀 POST final: {available_date} {time_slot}...")
+            appointment = await self._create_appointment(user_data, available_date, time_slot)
             
             if appointment and appointment.get('publicId'):
                 confirmation = appointment['publicId']
