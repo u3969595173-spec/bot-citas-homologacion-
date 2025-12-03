@@ -213,10 +213,15 @@ async def _ensure_instance():
         await _filler_instance.warmup()
     return _filler_instance
 
-async def fill_appointment(user_data: Dict, available_date: str) -> Dict:
+async def fill_appointment(user_data: Dict, available_date: str, time_slot: str = None) -> Dict:
     """
     Función principal para auto-llenar (versión ULTRA-RÁPIDA)
     Reutiliza conexión HTTP para máxima velocidad
+    
+    Args:
+        user_data: Datos del usuario
+        available_date: Fecha disponible
+        time_slot: Hora específica (opcional)
     """
     filler = await _ensure_instance()
-    return await filler.fill_appointment(user_data, available_date)
+    return await filler.fill_appointment(user_data, available_date, time_slot)
