@@ -128,7 +128,7 @@ class FastHTTPAutoFiller:
     
     async def _create_appointment(self, user_data: Dict, date: str, time: str) -> Optional[Dict]:
         """Crear reserva (rápido con httpx)"""
-        url = f"{self.base_url}/appointments"
+        url = f"{self.base_url}/branches/{self.branch_id}/appointments"
         
         # Separar nombre completo
         nombre_completo = user_data.get('nombre', '')
