@@ -17,9 +17,9 @@ BRANCH_ID = "7c2c5344f7ec051bc265995282e38698f770efab83ed9de0f9378d102f700630"
 SERVICE_ID = "e97539664874283b583f0ff0b25d1e34f0f14e083d59fb10b2dafb76e4544019"
 CUSTOM_SLOT_LENGTH = 10
 
-# Configuración de monitoreo - MODO SNIPER
-CHECK_INTERVAL_NORMAL = 0.005  # 200 checks/segundo (el doble de rápido)
-CHECK_INTERVAL_TURBO = 0.005   # 200 checks/segundo constante
+# Configuración de monitoreo - MODO HYPER-SNIPER
+CHECK_INTERVAL_NORMAL = 0.001  # 1000 checks/segundo (ULTRA RÁPIDO)
+CHECK_INTERVAL_TURBO = 0.001   # 1000 checks/segundo constante
 TURBO_START_HOUR = 0           # 24/7 modo turbo
 TURBO_END_HOUR = 24
 

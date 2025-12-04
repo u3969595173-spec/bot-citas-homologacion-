@@ -21,12 +21,13 @@ class FastHTTPAutoFiller:
         
         # Cliente HTTP reutilizable (conexión persistente) - PRE-CALENTADO
         self.client = httpx.AsyncClient(
-            timeout=httpx.Timeout(1.5, connect=0.5),  # Timeouts ULTRA agresivos
-            limits=httpx.Limits(max_keepalive_connections=10, max_connections=20),
-            http2=True,  # HTTP/2 para mayor velocidad
+            timeout=httpx.Timeout(0.8, connect=0.2),  # Timeouts EXTREMADAMENTE agresivos
+            limits=httpx.Limits(max_keepalive_connections=50, max_connections=100),
+            http2=False,  # HTTP/1.1 más rápido para peticiones simples
             verify=False  # Sin verificar SSL para máxima velocidad
         )
         self._warmed_up = False
+        self._payload_cache = {}  # Cache de payloads pre-generados
     
     async def warmup(self):
         """PRE-CALENTAR conexión (DNS + SSL handshake) ANTES de que aparezca cita"""
@@ -67,11 +68,17 @@ class FastHTTPAutoFiller:
             
             # Si no hay hora específica, intentar con horarios comunes primero
             if not time_slot:
-                # INTENTO 1: SHOTGUN - Intentar TODOS los horarios EN PARALELO
-                common_times = ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", 
-                               "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
-                               "15:00", "15:30", "16:00", "16:30"]
-                logger.info(f"🎯 MODO SHOTGUN: Intentando {len(common_times)} horarios EN PARALELO...")
+                # INTENTO 1: HYPER-SHOTGUN - Intentar MÁS horarios EN PARALELO (cada 15 min)
+                common_times = ["08:00", "08:15", "08:30", "08:45",
+                               "09:00", "09:15", "09:30", "09:45",
+                               "10:00", "10:15", "10:30", "10:45",
+                               "11:00", "11:15", "11:30", "11:45",
+                               "12:00", "12:15", "12:30", "12:45",
+                               "13:00", "13:15", "13:30", "13:45",
+                               "14:00", "14:15", "14:30", "14:45",
+                               "15:00", "15:15", "15:30", "15:45",
+                               "16:00", "16:15", "16:30", "16:45"]
+                logger.info(f"🎯 MODO HYPER-SHOTGUN: Intentando {len(common_times)} horarios EN PARALELO...")
                 
                 # Crear todas las tareas POST en paralelo
                 tasks = [
@@ -159,28 +166,36 @@ class FastHTTPAutoFiller:
             return []
     
     async def _create_appointment(self, user_data: Dict, date: str, time: str) -> Optional[Dict]:
-        """Crear reserva (rápido con httpx)"""
+        """Crear reserva (rápido con httpx) - CON CACHE DE PAYLOAD"""
         url = f"{self.base_url}/appointments"
         
-        # Separar nombre completo
-        nombre_completo = user_data.get('nombre', '')
-        partes = nombre_completo.strip().split(maxsplit=1)
-        first_name = partes[0] if partes else ''
-        last_name = partes[1] if len(partes) > 1 else ''
+        # Usar payload cacheado si existe (pre-generado)
+        cache_key = user_data.get('document', '')
+        if cache_key in self._payload_cache:
+            payload_base = self._payload_cache[cache_key]
+        else:
+            # Separar nombre completo y cachear
+            nombre_completo = user_data.get('nombre', '')
+            partes = nombre_completo.strip().split(maxsplit=1)
+            first_name = partes[0] if partes else ''
+            last_name = partes[1] if len(partes) > 1 else ''
+            
+            payload_base = {
+                "services": [{"publicId": self.service_id}],
+                "branch": {"publicId": self.branch_id},
+                "customer": {
+                    "firstName": first_name,
+                    "lastName": last_name,
+                    "email": user_data.get('email', ''),
+                    "phone": user_data.get('phone', ''),
+                    "identificationNumber": user_data.get('document', '')
+                },
+                "customSlotLength": self.custom_slot_length
+            }
+            self._payload_cache[cache_key] = payload_base
         
-        payload = {
-            "services": [{"publicId": self.service_id}],
-            "branch": {"publicId": self.branch_id},
-            "customer": {
-                "firstName": first_name,
-                "lastName": last_name,
-                "email": user_data.get('email', ''),
-                "phone": user_data.get('phone', ''),
-                "identificationNumber": user_data.get('document', '')
-            },
-            "start": f"{date}T{time}",
-            "customSlotLength": self.custom_slot_length
-        }
+        # Solo añadir el timestamp (lo único que cambia)
+        payload = {**payload_base, "start": f"{date}T{time}"}
         
         try:
             response = await self.client.post(
@@ -198,7 +213,7 @@ class FastHTTPAutoFiller:
             return result
             
         except Exception as e:
-            logger.error(f"Error POST appointment: {e}")
+            # No loguear para no perder tiempo (solo en paralelo)
             return None
 
 
