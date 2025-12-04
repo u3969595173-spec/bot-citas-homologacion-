@@ -21,8 +21,8 @@ class FastHTTPAutoFiller:
         
         # Cliente HTTP reutilizable (conexión persistente) - PRE-CALENTADO
         self.client = httpx.AsyncClient(
-            timeout=httpx.Timeout(0.8, connect=0.2),  # Timeouts EXTREMADAMENTE agresivos
-            limits=httpx.Limits(max_keepalive_connections=50, max_connections=100),
+            timeout=httpx.Timeout(0.4, connect=0.1),  # ⚡ TIMEOUTS MÍNIMOS (NUCLEAR)
+            limits=httpx.Limits(max_keepalive_connections=100, max_connections=200),
             http2=False,  # HTTP/1.1 más rápido para peticiones simples
             verify=False  # Sin verificar SSL para máxima velocidad
         )
@@ -68,17 +68,14 @@ class FastHTTPAutoFiller:
             
             # Si no hay hora específica, intentar con horarios comunes primero
             if not time_slot:
-                # INTENTO 1: HYPER-SHOTGUN - Intentar MÁS horarios EN PARALELO (cada 15 min)
-                common_times = ["08:00", "08:15", "08:30", "08:45",
-                               "09:00", "09:15", "09:30", "09:45",
-                               "10:00", "10:15", "10:30", "10:45",
-                               "11:00", "11:15", "11:30", "11:45",
-                               "12:00", "12:15", "12:30", "12:45",
-                               "13:00", "13:15", "13:30", "13:45",
-                               "14:00", "14:15", "14:30", "14:45",
-                               "15:00", "15:15", "15:30", "15:45",
-                               "16:00", "16:15", "16:30", "16:45"]
-                logger.info(f"🎯 MODO HYPER-SHOTGUN: Intentando {len(common_times)} horarios EN PARALELO...")
+                # INTENTO 1: NUCLEAR-SHOTGUN - Intentar 72 horarios EN PARALELO (cada 5 min) 🔥
+                common_times = ["08:00", "08:05", "08:10", "08:15", "08:20", "08:25", "08:30", "08:35", "08:40", "08:45", "08:50", "08:55",
+                               "09:00", "09:05", "09:10", "09:15", "09:20", "09:25", "09:30", "09:35", "09:40", "09:45", "09:50", "09:55",
+                               "10:00", "10:05", "10:10", "10:15", "10:20", "10:25", "10:30", "10:35", "10:40", "10:45", "10:50", "10:55",
+                               "11:00", "11:05", "11:10", "11:15", "11:20", "11:25", "11:30", "11:35", "11:40", "11:45", "11:50", "11:55",
+                               "12:00", "12:05", "12:10", "12:15", "12:20", "12:25", "12:30", "12:35", "12:40", "12:45", "12:50", "12:55",
+                               "13:00", "13:05", "13:10", "13:15", "13:20", "13:25", "13:30", "13:35", "13:40", "13:45", "13:50", "13:55"]
+                logger.info(f"🎯 MODO NUCLEAR-SHOTGUN: Intentando {len(common_times)} horarios EN PARALELO...")
                 
                 # Crear todas las tareas POST en paralelo
                 tasks = [

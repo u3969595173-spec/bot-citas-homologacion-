@@ -35,11 +35,12 @@ class CitasMonitor:
             self.checks_count += 1
             
             if dates and len(dates) > 0:
-                logger.info(f"ðŸŽ¯ CITAS DISPONIBLES: {dates}")
+                logger.warning(f"🎯 CITAS DISPONIBLES: {dates}")
                 return dates
             else:
-                if self.checks_count % 100 == 0:  # Log cada 100 checks
-                    logger.info(f"âœ“ Check #{self.checks_count} - Sin citas disponibles")
+                # Solo log cada 5000 checks (no cada 100) para no perder tiempo
+                if self.checks_count % 5000 == 0:
+                    logger.info(f"✓ Check #{self.checks_count} - Sin citas disponibles")
                 return []
                 
         except Exception as e:
