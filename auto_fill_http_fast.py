@@ -44,9 +44,12 @@ class FastHTTPAutoFiller:
         # 🚀 DNS PRE-RESUELTO: Eliminar lookup (ahorra 10-50ms)
         # IP: 5.2.28.16 (citaprevia.ciencia.gob.es)
         import socket
-        socket.getaddrinfo = lambda host, port, *args, **kwargs: [
-            (socket.AF_INET, socket.SOCK_STREAM, 6, '', ('5.2.28.16', port))
-        ] if 'citaprevia.ciencia.gob.es' in host else socket.getaddrinfo.__wrapped__(host, port, *args, **kwargs)
+        original_getaddrinfo = socket.getaddrinfo
+        def custom_getaddrinfo(host, port, *args, **kwargs):
+            if isinstance(host, str) and 'citaprevia.ciencia.gob.es' in host:
+                return [(socket.AF_INET, socket.SOCK_STREAM, 6, '', ('5.2.28.16', port))]
+            return original_getaddrinfo(host, port, *args, **kwargs)
+        socket.getaddrinfo = custom_getaddrinfo
         
         # 🔥 CONNECTION POOL: 10 conexiones HTTP/2 PRE-ESTABLECIDAS
         # Elimina handshake en cada request (ahorra 15-30ms)
@@ -71,13 +74,18 @@ class FastHTTPAutoFiller:
             
             # Crear pool de conexiones
             for i in range(self._pool_size):
-                client = httpx.AsyncClient(
-                    timeout=httpx.Timeout(0.3, connect=0.05),
-                    limits=httpx.Limits(max_keepalive_connections=5, max_connections=10),
-                    http2=True,
-                    verify=False,
-                    proxies=self.proxy_url if self.use_proxy else None  # 🔄 Usar proxy si está activado
-                )
+                client_kwargs = {
+                    'timeout': httpx.Timeout(0.3, connect=0.05),
+                    'limits': httpx.Limits(max_keepalive_connections=5, max_connections=10),
+                    'http2': True,
+                    'verify': False
+                }
+                
+                # Añadir proxy solo si está activado (httpx usa 'proxy' no 'proxies')
+                if self.use_proxy and self.proxy_url:
+                    client_kwargs['proxy'] = self.proxy_url
+                
+                client = httpx.AsyncClient(**client_kwargs)
                 
                 # Pre-calentar cada conexión con request dummy
                 url = f"{self.base_url}/branches/{self.branch_id}/services"
