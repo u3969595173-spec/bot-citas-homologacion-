@@ -22,12 +22,13 @@ class FastHTTPAutoFiller:
         # Cliente HTTP reutilizable (conexión persistente) - PRE-CALENTADO
         self.client = httpx.AsyncClient(
             timeout=httpx.Timeout(0.4, connect=0.1),  # ⚡ TIMEOUTS MÍNIMOS (NUCLEAR)
-            limits=httpx.Limits(max_keepalive_connections=100, max_connections=200),
-            http2=False,  # HTTP/1.1 más rápido para peticiones simples
+            limits=httpx.Limits(max_keepalive_connections=50, max_connections=100),  # HTTP/2 usa menos conexiones
+            http2=True,  # 🚀 HTTP/2 con multiplexing (múltiples requests en 1 conexión)
             verify=False  # Sin verificar SSL para máxima velocidad
         )
         self._warmed_up = False
         self._payload_cache = {}  # Cache de payloads pre-generados
+        self._ready_payloads = {}  # Payloads completos listos para enviar
     
     async def warmup(self):
         """PRE-CALENTAR conexión (DNS + SSL handshake) ANTES de que aparezca cita"""
@@ -35,14 +36,53 @@ class FastHTTPAutoFiller:
             return
         
         try:
-            logger.info("🔥 PRE-CALENTANDO conexión HTTP...")
+            logger.info("🔥 PRE-CALENTANDO conexión HTTP/2...")
             # Hacer petición dummy para establecer conexión TCP + SSL
             url = f"{self.base_url}/branches/{self.branch_id}/services"
             await self.client.get(url)
             self._warmed_up = True
-            logger.info("✅ Conexión PRE-CALENTADA (DNS + SSL listos)")
+            logger.info("✅ Conexión HTTP/2 PRE-CALENTADA (DNS + SSL listos)")
         except Exception as e:
             logger.warning(f"⚠️ Error pre-calentando: {e}")
+    
+    def pregenerate_payloads(self, user_data: Dict):
+        """🚀 PRE-GENERAR 72 payloads completos en memoria (eliminando delay de generación)"""
+        if self._ready_payloads:
+            return  # Ya están generados
+        
+        logger.info("📦 Pre-generando 72 payloads en memoria...")
+        
+        # Separar nombre completo UNA VEZ
+        nombre_completo = user_data.get('nombre', '')
+        partes = nombre_completo.strip().split(maxsplit=1)
+        first_name = partes[0] if partes else ''
+        last_name = partes[1] if len(partes) > 1 else ''
+        
+        # Payload base (sin timestamp)
+        base_payload = {
+            "services": [{"publicId": self.service_id}],
+            "branch": {"publicId": self.branch_id},
+            "customer": {
+                "firstName": first_name,
+                "lastName": last_name,
+                "email": user_data.get('email', ''),
+                "phone": user_data.get('phone', ''),
+                "identificationNumber": user_data.get('document', '')
+            },
+            "customSlotLength": self.custom_slot_length
+        }
+        
+        # Horarios a probar (72 slots cada 5 minutos)
+        time_slots = []
+        for hour in range(8, 14):  # 8:00 - 13:55
+            for minute in [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]:
+                time_slots.append(f"{hour:02d}:{minute:02d}")
+        
+        # Pre-generar payload para cada horario
+        for time_slot in time_slots:
+            self._ready_payloads[time_slot] = {**base_payload, "start": f"{{date}}T{time_slot}"}
+        
+        logger.info(f"✅ {len(self._ready_payloads)} payloads PRE-GENERADOS en RAM")
     
     async def close(self):
         """Cerrar cliente HTTP"""
@@ -64,18 +104,17 @@ class FastHTTPAutoFiller:
             # Asegurar conexión pre-calentada
             await self.warmup()
             
+            # 🚀 PRE-GENERAR payloads si no están listos
+            if not self._ready_payloads:
+                self.pregenerate_payloads(user_data)
+            
             logger.info(f"⚡ RESERVA ULTRA-RÁPIDA para {user_data.get('nombre', 'Usuario')}")
             
             # Si no hay hora específica, intentar con horarios comunes primero
             if not time_slot:
                 # INTENTO 1: NUCLEAR-SHOTGUN - Intentar 72 horarios EN PARALELO (cada 5 min) 🔥
-                common_times = ["08:00", "08:05", "08:10", "08:15", "08:20", "08:25", "08:30", "08:35", "08:40", "08:45", "08:50", "08:55",
-                               "09:00", "09:05", "09:10", "09:15", "09:20", "09:25", "09:30", "09:35", "09:40", "09:45", "09:50", "09:55",
-                               "10:00", "10:05", "10:10", "10:15", "10:20", "10:25", "10:30", "10:35", "10:40", "10:45", "10:50", "10:55",
-                               "11:00", "11:05", "11:10", "11:15", "11:20", "11:25", "11:30", "11:35", "11:40", "11:45", "11:50", "11:55",
-                               "12:00", "12:05", "12:10", "12:15", "12:20", "12:25", "12:30", "12:35", "12:40", "12:45", "12:50", "12:55",
-                               "13:00", "13:05", "13:10", "13:15", "13:20", "13:25", "13:30", "13:35", "13:40", "13:45", "13:50", "13:55"]
-                logger.info(f"🎯 MODO NUCLEAR-SHOTGUN: Intentando {len(common_times)} horarios EN PARALELO...")
+                common_times = list(self._ready_payloads.keys())  # Usar horarios pre-generados
+                logger.info(f"🎯 MODO NUCLEAR-SHOTGUN: Intentando {len(common_times)} horarios EN PARALELO (payloads pre-generados)...")
                 
                 # Crear todas las tareas POST en paralelo
                 tasks = [
@@ -163,36 +202,39 @@ class FastHTTPAutoFiller:
             return []
     
     async def _create_appointment(self, user_data: Dict, date: str, time: str) -> Optional[Dict]:
-        """Crear reserva (rápido con httpx) - CON CACHE DE PAYLOAD"""
+        """Crear reserva ULTRA-RÁPIDA - Usando payloads PRE-GENERADOS"""
         url = f"{self.base_url}/appointments"
         
-        # Usar payload cacheado si existe (pre-generado)
-        cache_key = user_data.get('document', '')
-        if cache_key in self._payload_cache:
-            payload_base = self._payload_cache[cache_key]
+        # 🚀 Usar payload pre-generado (elimina 5-10ms de procesamiento)
+        if time in self._ready_payloads:
+            payload = {**self._ready_payloads[time]}
+            payload["start"] = payload["start"].replace("{date}", date)
         else:
-            # Separar nombre completo y cachear
-            nombre_completo = user_data.get('nombre', '')
-            partes = nombre_completo.strip().split(maxsplit=1)
-            first_name = partes[0] if partes else ''
-            last_name = partes[1] if len(partes) > 1 else ''
+            # Fallback si el horario no está pre-generado
+            cache_key = user_data.get('document', '')
+            if cache_key in self._payload_cache:
+                payload_base = self._payload_cache[cache_key]
+            else:
+                nombre_completo = user_data.get('nombre', '')
+                partes = nombre_completo.strip().split(maxsplit=1)
+                first_name = partes[0] if partes else ''
+                last_name = partes[1] if len(partes) > 1 else ''
+                
+                payload_base = {
+                    "services": [{"publicId": self.service_id}],
+                    "branch": {"publicId": self.branch_id},
+                    "customer": {
+                        "firstName": first_name,
+                        "lastName": last_name,
+                        "email": user_data.get('email', ''),
+                        "phone": user_data.get('phone', ''),
+                        "identificationNumber": user_data.get('document', '')
+                    },
+                    "customSlotLength": self.custom_slot_length
+                }
+                self._payload_cache[cache_key] = payload_base
             
-            payload_base = {
-                "services": [{"publicId": self.service_id}],
-                "branch": {"publicId": self.branch_id},
-                "customer": {
-                    "firstName": first_name,
-                    "lastName": last_name,
-                    "email": user_data.get('email', ''),
-                    "phone": user_data.get('phone', ''),
-                    "identificationNumber": user_data.get('document', '')
-                },
-                "customSlotLength": self.custom_slot_length
-            }
-            self._payload_cache[cache_key] = payload_base
-        
-        # Solo añadir el timestamp (lo único que cambia)
-        payload = {**payload_base, "start": f"{date}T{time}"}
+            payload = {**payload_base, "start": f"{date}T{time}"}
         
         try:
             response = await self.client.post(
