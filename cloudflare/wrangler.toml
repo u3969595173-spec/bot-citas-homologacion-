@@ -1,0 +1,16 @@
+name = "citasbot-edge"
+main = "worker.js"
+compatibility_date = "2024-12-05"
+
+# Variables de entorno
+[vars]
+WEBHOOK_URL = "https://tu-bot.onrender.com/webhook"
+
+# Triggers programados
+[triggers]
+# Ejecutar cada 200ms (5 veces/segundo)
+crons = ["* * * * *"]  # Cada minuto, luego loop interno
+
+# Workers AI (opcional para ML predictions)
+# [ai]
+# binding = "AI"
