@@ -19,9 +19,16 @@ class FastHTTPAutoFiller:
         self.branch_id = "7c2c5344f7ec051bc265995282e38698f770efab83ed9de0f9378d102f700630"
         self.custom_slot_length = 10
         
+        # 🚀 DNS PRE-RESUELTO: Eliminar lookup (ahorra 10-50ms)
+        # IP: 5.2.28.16 (citaprevia.ciencia.gob.es)
+        import socket
+        socket.getaddrinfo = lambda host, port, *args, **kwargs: [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, '', ('5.2.28.16', port))
+        ] if 'citaprevia.ciencia.gob.es' in host else socket.getaddrinfo.__wrapped__(host, port, *args, **kwargs)
+        
         # Cliente HTTP reutilizable (conexión persistente) - PRE-CALENTADO
         self.client = httpx.AsyncClient(
-            timeout=httpx.Timeout(0.4, connect=0.1),  # ⚡ TIMEOUTS MÍNIMOS (NUCLEAR)
+            timeout=httpx.Timeout(0.3, connect=0.05),  # ⚡⚡ ULTRA-AGRESIVO: 300ms total, 50ms connect
             limits=httpx.Limits(max_keepalive_connections=50, max_connections=100),  # HTTP/2 usa menos conexiones
             http2=True,  # 🚀 HTTP/2 con multiplexing (múltiples requests en 1 conexión)
             verify=False  # Sin verificar SSL para máxima velocidad
@@ -73,10 +80,21 @@ class FastHTTPAutoFiller:
         }
         
         # Horarios a probar (72 slots cada 5 minutos)
-        time_slots = []
+        # 🎯 PRIORIZADOS: Horarios con mayor probabilidad histórica
+        priority_times = []
+        normal_times = []
+        
         for hour in range(8, 14):  # 8:00 - 13:55
             for minute in [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]:
-                time_slots.append(f"{hour:02d}:{minute:02d}")
+                time_str = f"{hour:02d}:{minute:02d}"
+                # Priorizar 09:00-11:00 (pico de liberación de citas)
+                if 9 <= hour < 11:
+                    priority_times.append(time_str)
+                else:
+                    normal_times.append(time_str)
+        
+        # Ordenar: prioritarios primero, luego resto
+        time_slots = priority_times + normal_times
         
         # Pre-generar payload para cada horario
         for time_slot in time_slots:
@@ -242,7 +260,8 @@ class FastHTTPAutoFiller:
                 json=payload,
                 headers={
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'Connection': 'keep-alive'  # Forzar conexión persistente
                 }
             )
             response.raise_for_status()
@@ -251,6 +270,20 @@ class FastHTTPAutoFiller:
             logger.info(f"✅ Reserva creada: {result.get('publicId', 'N/A')}")
             return result
             
+        except httpx.TimeoutException:
+            # Timeout rápido = no perder tiempo
+            return None
+        except httpx.HTTPStatusError as e:
+            # 404/429 = no hay cita o rate limit
+            if e.response.status_code in [404, 429]:
+                return None
+            # Otros errores: retry una vez
+            try:
+                await asyncio.sleep(0.05)  # 50ms delay
+                response = await self.client.post(url, json=payload)
+                return response.json()
+            except:
+                return None
         except Exception as e:
             # No loguear para no perder tiempo (solo en paralelo)
             return None
