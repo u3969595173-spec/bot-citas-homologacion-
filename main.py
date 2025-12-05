@@ -771,7 +771,11 @@ def main():
         logger.info("✅ Bot completamente inicializado")
         # Iniciar SOLO el monitor (sin Telegram)
         from monitor import CitasMonitor
-        monitor_instance = CitasMonitor()
+        # Crear callback dummy que solo loguea (no notifica por Telegram)
+        async def monitor_only_callback(dates):
+            logger.info(f"📅 [MONITOR-ONLY] Cita detectada: {dates}")
+        
+        monitor_instance = CitasMonitor(monitor_only_callback)
         logger.info("🔍 Monitor de citas iniciado")
         # Mantener vivo el proceso
         import asyncio
