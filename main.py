@@ -762,19 +762,26 @@ def main():
     # Solo un bot puede recibir mensajes de Telegram (el primero)
     enable_telegram = os.getenv('ENABLE_TELEGRAM_BOT', 'false').lower() == 'true'
     
+    # Iniciar health server para Render (siempre)
+    logger.info('Iniciando health server...')
+    start_health_server()
+    
     if not enable_telegram:
         logger.warning("⚠️ Bot de Telegram DESACTIVADO - Solo monitoreando citas")
         logger.info("✅ Bot completamente inicializado")
-        # Solo monitorear, sin recibir comandos de Telegram
+        # Iniciar SOLO el monitor (sin Telegram)
+        import monitor
+        monitor.start_monitor()
+        # Mantener vivo el proceso
+        import asyncio
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_forever()
         return
     
     # Crear aplicación
     application = Application.builder().token(TELEGRAM_BOT_TOKEN).post_init(post_init).post_shutdown(post_shutdown).build()
 
-    # Iniciar health server para Render
-    logger.info('Iniciando health server...')
-    start_health_server()
-    
     # Handler de conversación para registro de datos
     datos_handler = ConversationHandler(
         entry_points=[CommandHandler("datos", datos_start)],
