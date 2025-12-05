@@ -778,28 +778,39 @@ def main():
         fallbacks=[CommandHandler("cancelar", datos_cancelar)],
     )
     
-    # Registrar comandos
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(datos_handler)
-    application.add_handler(CommandHandler("registrar", registrar))
-    application.add_handler(CommandHandler("status", status))
-    application.add_handler(CommandHandler("mistats", mistats))
-    application.add_handler(CommandHandler("stop", stop_monitoring))
-    application.add_handler(CommandHandler("admin", admin_stats))
+    # Verificar si este bot debe activar Telegram
+    enable_telegram = os.getenv('ENABLE_TELEGRAM_BOT', 'true').lower() == 'true'
     
-    # Registrar handler de botones
-    application.add_handler(CallbackQueryHandler(button_callback))
-    application.add_handler(CommandHandler("pausar", pausar_command))
-    application.add_handler(CommandHandler("reanudar", reanudar_command))
-    application.add_handler(CommandHandler("test", test_command))
-    application.add_handler(CommandHandler("stats", stats_command))
-    application.add_handler(CommandHandler("cola", cola_command))
-    application.add_handler(CommandHandler("confirmar", confirmar_cita_command))
-    application.add_handler(CommandHandler("cancelar", cancelar_cola_command))
-    
-    # Iniciar bot
-    logger.info("🚀 Iniciando Bot de Citas...")
-    application.run_polling(allowed_updates=Update.ALL_TYPES)
+    if enable_telegram:
+        # Registrar comandos
+        application.add_handler(CommandHandler("start", start))
+        application.add_handler(datos_handler)
+        application.add_handler(CommandHandler("registrar", registrar))
+        application.add_handler(CommandHandler("status", status))
+        application.add_handler(CommandHandler("mistats", mistats))
+        application.add_handler(CommandHandler("stop", stop_monitoring))
+        application.add_handler(CommandHandler("admin", admin_stats))
+        
+        # Registrar handler de botones
+        application.add_handler(CallbackQueryHandler(button_callback))
+        application.add_handler(CommandHandler("pausar", pausar_command))
+        application.add_handler(CommandHandler("reanudar", reanudar_command))
+        application.add_handler(CommandHandler("test", test_command))
+        application.add_handler(CommandHandler("stats", stats_command))
+        application.add_handler(CommandHandler("cola", cola_command))
+        application.add_handler(CommandHandler("confirmar", confirmar_cita_command))
+        application.add_handler(CommandHandler("cancelar", cancelar_cola_command))
+        
+        # Iniciar bot
+        logger.info("🚀 Iniciando Bot de Citas...")
+        application.run_polling(allowed_updates=Update.ALL_TYPES)
+    else:
+        # Modo worker: Solo monitoreo, sin Telegram
+        logger.warning("⚠️ Bot de Telegram DESACTIVADO - Solo monitoreando citas")
+        logger.info("✅ Bot completamente inicializado")
+        # Mantener el proceso vivo
+        import asyncio
+        asyncio.get_event_loop().run_forever()
 
 
 if __name__ == '__main__':
