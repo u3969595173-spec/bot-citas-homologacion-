@@ -1,4 +1,4 @@
-"""
+"""  
 Auto-llenado HTTP ULTRA-RÁPIDO usando httpx nativo
 Versión optimizada para competir con otros bots
 """
@@ -6,6 +6,7 @@ Versión optimizada para competir con otros bots
 import httpx
 import asyncio
 import logging
+import os
 from typing import Dict, Optional
 
 logger = logging.getLogger(__name__)
@@ -18,6 +19,27 @@ class FastHTTPAutoFiller:
         self.service_id = "e97539664874283b583f0ff0b25d1e34f0f14e083d59fb10b2dafb76e4544019"
         self.branch_id = "7c2c5344f7ec051bc265995282e38698f770efab83ed9de0f9378d102f700630"
         self.custom_slot_length = 10
+        
+        # 🔄 CONFIGURACIÓN DE PROXIES (Bright Data)
+        self.use_proxy = os.getenv('USE_PROXY', 'false').lower() == 'true'
+        self.proxy_url = None
+        
+        if self.use_proxy:
+            proxy_host = os.getenv('PROXY_HOST', 'brd.superproxy.io')
+            proxy_port = os.getenv('PROXY_PORT', '22225')
+            proxy_user = os.getenv('PROXY_USERNAME', '')
+            proxy_pass = os.getenv('PROXY_PASSWORD', '')
+            proxy_country = os.getenv('PROXY_COUNTRY', 'es')  # España por defecto
+            
+            if proxy_user and proxy_pass:
+                # Formato Bright Data con sesión aleatoria para rotación
+                import random
+                session_id = random.randint(1000000, 9999999)
+                self.proxy_url = f"http://{proxy_user}-country-{proxy_country}-session-{session_id}:{proxy_pass}@{proxy_host}:{proxy_port}"
+                logger.info(f"🔄 Proxies ACTIVADOS: {proxy_country.upper()} via {proxy_host}")
+            else:
+                logger.warning("⚠️ USE_PROXY=true pero faltan credenciales")
+                self.use_proxy = False
         
         # 🚀 DNS PRE-RESUELTO: Eliminar lookup (ahorra 10-50ms)
         # IP: 5.2.28.16 (citaprevia.ciencia.gob.es)
@@ -53,7 +75,8 @@ class FastHTTPAutoFiller:
                     timeout=httpx.Timeout(0.3, connect=0.05),
                     limits=httpx.Limits(max_keepalive_connections=5, max_connections=10),
                     http2=True,
-                    verify=False
+                    verify=False,
+                    proxies=self.proxy_url if self.use_proxy else None  # 🔄 Usar proxy si está activado
                 )
                 
                 # Pre-calentar cada conexión con request dummy
@@ -77,7 +100,8 @@ class FastHTTPAutoFiller:
                 timeout=httpx.Timeout(0.3, connect=0.05),
                 limits=httpx.Limits(max_keepalive_connections=50, max_connections=100),
                 http2=True,
-                verify=False
+                verify=False,
+                proxies=self.proxy_url if self.use_proxy else None  # 🔄 Proxy en fallback también
             )
             self.connection_pool = [self.client]
     
