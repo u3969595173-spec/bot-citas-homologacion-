@@ -770,13 +770,14 @@ def main():
         logger.warning("⚠️ Bot de Telegram DESACTIVADO - Solo monitoreando citas")
         logger.info("✅ Bot completamente inicializado")
         # Iniciar SOLO el monitor (sin Telegram)
-        import monitor
-        monitor.start_monitor()
+        from monitor import CitasMonitor
+        monitor_instance = CitasMonitor()
+        logger.info("🔍 Monitor de citas iniciado")
         # Mantener vivo el proceso
         import asyncio
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.run_forever()
+        loop.run_until_complete(monitor_instance.start_monitoring())
         return
     
     # Crear aplicación
