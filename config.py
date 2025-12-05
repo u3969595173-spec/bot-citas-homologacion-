@@ -17,10 +17,10 @@ BRANCH_ID = "7c2c5344f7ec051bc265995282e38698f770efab83ed9de0f9378d102f700630"
 SERVICE_ID = "e97539664874283b583f0ff0b25d1e34f0f14e083d59fb10b2dafb76e4544019"
 CUSTOM_SLOT_LENGTH = 10
 
-# Configuración de monitoreo - MODO NUCLEAR OPTIMIZADO 🔥
-CHECK_INTERVAL_NORMAL = 0.00015  # 6666 checks/segundo por bot (MÁXIMA VELOCIDAD)
-CHECK_INTERVAL_TURBO = 0.00015   # 6666 checks/segundo constante
-TURBO_START_HOUR = 0             # 24/7 modo nuclear
+# Configuración de monitoreo - MODO NUCLEAR EXTREMO 🚀
+CHECK_INTERVAL_NORMAL = 0.0001  # 10,000 checks/segundo por bot (VELOCIDAD EXTREMA)
+CHECK_INTERVAL_TURBO = 0.0001   # 10,000 checks/segundo constante
+TURBO_START_HOUR = 0            # 24/7 modo nuclear
 TURBO_END_HOUR = 24
 
 # Admin del bot (de variable de entorno o hardcoded)

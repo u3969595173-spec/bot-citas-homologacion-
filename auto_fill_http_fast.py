@@ -51,11 +51,11 @@ class FastHTTPAutoFiller:
             return original_getaddrinfo(host, port, *args, **kwargs)
         socket.getaddrinfo = custom_getaddrinfo
         
-        # 🔥 CONNECTION POOL: 20 conexiones HTTP/2 PRE-ESTABLECIDAS
+        # 🔥 CONNECTION POOL: 50 conexiones HTTP/2 PRE-ESTABLECIDAS
         # Elimina handshake en cada request (ahorra 15-30ms)
         self.connection_pool = []
         self._pool_index = 0
-        self._pool_size = 20
+        self._pool_size = 50
         
         # Cliente principal (mantener por compatibilidad)
         self.client = None
@@ -75,8 +75,8 @@ class FastHTTPAutoFiller:
             # Crear pool de conexiones
             for i in range(self._pool_size):
                 client_kwargs = {
-                    'timeout': httpx.Timeout(0.1, connect=0.03),
-                    'limits': httpx.Limits(max_keepalive_connections=10, max_connections=25),
+                    'timeout': httpx.Timeout(0.05, connect=0.02),
+                    'limits': httpx.Limits(max_keepalive_connections=25, max_connections=75),
                     'http2': True,
                     'verify': False
                 }
@@ -107,8 +107,8 @@ class FastHTTPAutoFiller:
             logger.error(f"❌ Error creando pool: {e}")
             # Fallback: crear cliente simple
             self.client = httpx.AsyncClient(
-                timeout=httpx.Timeout(0.1, connect=0.03),
-                limits=httpx.Limits(max_keepalive_connections=50, max_connections=100),
+                timeout=httpx.Timeout(0.05, connect=0.02),
+                limits=httpx.Limits(max_keepalive_connections=75, max_connections=150),
                 http2=True,
                 verify=False,
                 proxies=self.proxy_url if self.use_proxy else None  # 🔄 Proxy en fallback también

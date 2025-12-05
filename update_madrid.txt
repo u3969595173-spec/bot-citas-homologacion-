@@ -1,0 +1,30 @@
+COMANDOS PARA ACTUALIZAR BOT DE MADRID
+========================================
+
+1. Conectarse a la VM:
+   gcloud compute ssh citasbot-madrid --zone=europe-southwest1-a
+
+2. Ir a la carpeta del bot:
+   cd CitasBot
+
+3. Detener el bot actual:
+   pkill -f "python3 main.py"
+
+4. Actualizar código desde GitHub:
+   git pull origin main
+
+5. Reiniciar el bot optimizado:
+   python3 main.py &
+
+6. Ver logs para verificar:
+   tail -f bot.log
+
+7. Verificar que esté corriendo:
+   ps aux | grep python
+
+MEJORAS IMPLEMENTADAS:
+- ⚡ Pool de 20 conexiones (antes 10)
+- ⚡ Timeout 100ms (antes 300ms) 
+- ⚡ 6666 checks/seg por bot (antes 5000)
+- ⚡ Logging reducido (menos CPU)
+- 🚀 Capacidad total: 46,662 checks/segundo (7 bots × 6666)

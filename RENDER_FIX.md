@@ -18,7 +18,7 @@ make sure that only one bot instance is running
     raise Conflict(message)
 telegram.error.Conflict: Conflict: terminated by other getUpdates request; make sure that only one bot instance is running
 2025-12-05 10:08:15,983 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8337512957:AAFcmCb8t14oDuwpzKG7-8Bh_S9Jxeyi1Uw/getUpdates "HTTP/1.1 409 Conflict"
-2025-12-05 10:08:15,984 - telegram.ext.Application - ERROR - No error handlers are registered, logging exception.
+2025-12-05 10:08:15,984 - telegram.ext.Application - ERROR - No errops aux | grer handlers are registered, logging exception.
 Traceback (most recent call last):
   File "/usr/local/lib/python3.10/dist-packages/telegram/ext/_updater.py", line 743, in _network_loop_retry
     if not await do_action():
