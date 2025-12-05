@@ -26,31 +26,69 @@ class FastHTTPAutoFiller:
             (socket.AF_INET, socket.SOCK_STREAM, 6, '', ('5.2.28.16', port))
         ] if 'citaprevia.ciencia.gob.es' in host else socket.getaddrinfo.__wrapped__(host, port, *args, **kwargs)
         
-        # Cliente HTTP reutilizable (conexión persistente) - PRE-CALENTADO
-        self.client = httpx.AsyncClient(
-            timeout=httpx.Timeout(0.3, connect=0.05),  # ⚡⚡ ULTRA-AGRESIVO: 300ms total, 50ms connect
-            limits=httpx.Limits(max_keepalive_connections=50, max_connections=100),  # HTTP/2 usa menos conexiones
-            http2=True,  # 🚀 HTTP/2 con multiplexing (múltiples requests en 1 conexión)
-            verify=False  # Sin verificar SSL para máxima velocidad
-        )
+        # 🔥 CONNECTION POOL: 10 conexiones HTTP/2 PRE-ESTABLECIDAS
+        # Elimina handshake en cada request (ahorra 15-30ms)
+        self.connection_pool = []
+        self._pool_index = 0
+        self._pool_size = 10
+        
+        # Cliente principal (mantener por compatibilidad)
+        self.client = None
+        
         self._warmed_up = False
         self._payload_cache = {}  # Cache de payloads pre-generados
         self._ready_payloads = {}  # Payloads completos listos para enviar
     
     async def warmup(self):
-        """PRE-CALENTAR conexión (DNS + SSL handshake) ANTES de que aparezca cita"""
+        """PRE-CALENTAR conexiones (DNS + SSL handshake) ANTES de que aparezca cita"""
         if self._warmed_up:
             return
         
         try:
-            logger.info("🔥 PRE-CALENTANDO conexión HTTP/2...")
-            # Hacer petición dummy para establecer conexión TCP + SSL
-            url = f"{self.base_url}/branches/{self.branch_id}/services"
-            await self.client.get(url)
+            logger.info(f"🔥 PRE-ESTABLECIENDO {self._pool_size} conexiones HTTP/2...")
+            
+            # Crear pool de conexiones
+            for i in range(self._pool_size):
+                client = httpx.AsyncClient(
+                    timeout=httpx.Timeout(0.3, connect=0.05),
+                    limits=httpx.Limits(max_keepalive_connections=5, max_connections=10),
+                    http2=True,
+                    verify=False
+                )
+                
+                # Pre-calentar cada conexión con request dummy
+                url = f"{self.base_url}/branches/{self.branch_id}/services"
+                try:
+                    await client.get(url)
+                    self.connection_pool.append(client)
+                except Exception as e:
+                    logger.warning(f"⚠️ Error pre-calentando conexión {i}: {e}")
+            
+            # Cliente principal = primera conexión del pool
+            if self.connection_pool:
+                self.client = self.connection_pool[0]
+            
             self._warmed_up = True
-            logger.info("✅ Conexión HTTP/2 PRE-CALENTADA (DNS + SSL listos)")
+            logger.info(f"✅ {len(self.connection_pool)} conexiones HTTP/2 PRE-ESTABLECIDAS (DNS + SSL + handshake listos)")
         except Exception as e:
-            logger.warning(f"⚠️ Error pre-calentando: {e}")
+            logger.error(f"❌ Error creando pool: {e}")
+            # Fallback: crear cliente simple
+            self.client = httpx.AsyncClient(
+                timeout=httpx.Timeout(0.3, connect=0.05),
+                limits=httpx.Limits(max_keepalive_connections=50, max_connections=100),
+                http2=True,
+                verify=False
+            )
+            self.connection_pool = [self.client]
+    
+    def _get_next_client(self):
+        """Obtener siguiente cliente del pool (round-robin)"""
+        if not self.connection_pool:
+            return self.client
+        
+        client = self.connection_pool[self._pool_index]
+        self._pool_index = (self._pool_index + 1) % len(self.connection_pool)
+        return client
     
     def pregenerate_payloads(self, user_data: Dict):
         """🚀 PRE-GENERAR 72 payloads completos en memoria (eliminando delay de generación)"""
@@ -103,8 +141,14 @@ class FastHTTPAutoFiller:
         logger.info(f"✅ {len(self._ready_payloads)} payloads PRE-GENERADOS en RAM")
     
     async def close(self):
-        """Cerrar cliente HTTP"""
-        await self.client.aclose()
+        """Cerrar pool de conexiones HTTP"""
+        logger.info(f"🔒 Cerrando {len(self.connection_pool)} conexiones...")
+        for client in self.connection_pool:
+            try:
+                await client.aclose()
+            except:
+                pass
+        self.connection_pool.clear()
     
     async def fill_appointment(self, user_data: Dict, available_date: str, time_slot: str = None) -> Dict:
         """
@@ -220,8 +264,11 @@ class FastHTTPAutoFiller:
             return []
     
     async def _create_appointment(self, user_data: Dict, date: str, time: str) -> Optional[Dict]:
-        """Crear reserva ULTRA-RÁPIDA - Usando payloads PRE-GENERADOS"""
+        """Crear reserva ULTRA-RÁPIDA - Pool de conexiones + Payloads PRE-GENERADOS"""
         url = f"{self.base_url}/appointments"
+        
+        # 🔥 Obtener conexión del pool (round-robin load balancing)
+        client = self._get_next_client()
         
         # 🚀 Usar payload pre-generado (elimina 5-10ms de procesamiento)
         if time in self._ready_payloads:
@@ -255,7 +302,8 @@ class FastHTTPAutoFiller:
             payload = {**payload_base, "start": f"{date}T{time}"}
         
         try:
-            response = await self.client.post(
+            # 🔥 Usar cliente del pool en lugar de self.client
+            response = await client.post(
                 url,
                 json=payload,
                 headers={
@@ -280,7 +328,7 @@ class FastHTTPAutoFiller:
             # Otros errores: retry una vez
             try:
                 await asyncio.sleep(0.05)  # 50ms delay
-                response = await self.client.post(url, json=payload)
+                response = await client.post(url, json=payload)
                 return response.json()
             except:
                 return None
