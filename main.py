@@ -758,35 +758,13 @@ def main():
         logger.error("❌ Debes configurar TELEGRAM_BOT_TOKEN en config.py")
         return
     
-    # 🔧 Verificar si este bot debe manejar comandos de Telegram
-    # Solo un bot puede recibir mensajes de Telegram (el primero)
-    enable_telegram = os.getenv('ENABLE_TELEGRAM_BOT', 'false').lower() == 'true'
-    
-    # Iniciar health server para Render (siempre)
-    logger.info('Iniciando health server...')
-    start_health_server()
-    
-    if not enable_telegram:
-        logger.warning("⚠️ Bot de Telegram DESACTIVADO - Solo monitoreando citas")
-        logger.info("✅ Bot completamente inicializado")
-        # Iniciar SOLO el monitor (sin Telegram)
-        from monitor import CitasMonitor
-        # Crear callback dummy que solo loguea (no notifica por Telegram)
-        async def monitor_only_callback(dates):
-            logger.info(f"📅 [MONITOR-ONLY] Cita detectada: {dates}")
-        
-        monitor_instance = CitasMonitor(monitor_only_callback)
-        logger.info("🔍 Monitor de citas iniciado")
-        # Mantener vivo el proceso
-        import asyncio
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(monitor_instance.start_monitoring())
-        return
-    
     # Crear aplicación
     application = Application.builder().token(TELEGRAM_BOT_TOKEN).post_init(post_init).post_shutdown(post_shutdown).build()
 
+    # Iniciar health server para Render
+    logger.info('Iniciando health server...')
+    start_health_server()
+    
     # Handler de conversación para registro de datos
     datos_handler = ConversationHandler(
         entry_points=[CommandHandler("datos", datos_start)],

@@ -42,8 +42,8 @@ class CitasMonitor:
                 logger.warning(f"🎯 [{BOT_INSTANCE_ID}] CITAS DISPONIBLES: {dates}")
                 return dates
             else:
-                # Solo log cada 5000 checks (no cada 100) para no perder tiempo
-                if self.checks_count % 5000 == 0:
+                # Solo log cada 10000 checks para máxima velocidad
+                if self.checks_count % 10000 == 0:
                     logger.info(f"✓ [{BOT_INSTANCE_ID}] Check #{self.checks_count} - Sin citas disponibles")
                 return []
                 

@@ -51,11 +51,11 @@ class FastHTTPAutoFiller:
             return original_getaddrinfo(host, port, *args, **kwargs)
         socket.getaddrinfo = custom_getaddrinfo
         
-        # 🔥 CONNECTION POOL: 10 conexiones HTTP/2 PRE-ESTABLECIDAS
+        # 🔥 CONNECTION POOL: 20 conexiones HTTP/2 PRE-ESTABLECIDAS
         # Elimina handshake en cada request (ahorra 15-30ms)
         self.connection_pool = []
         self._pool_index = 0
-        self._pool_size = 10
+        self._pool_size = 20
         
         # Cliente principal (mantener por compatibilidad)
         self.client = None
@@ -75,8 +75,8 @@ class FastHTTPAutoFiller:
             # Crear pool de conexiones
             for i in range(self._pool_size):
                 client_kwargs = {
-                    'timeout': httpx.Timeout(0.3, connect=0.05),
-                    'limits': httpx.Limits(max_keepalive_connections=5, max_connections=10),
+                    'timeout': httpx.Timeout(0.1, connect=0.03),
+                    'limits': httpx.Limits(max_keepalive_connections=10, max_connections=25),
                     'http2': True,
                     'verify': False
                 }
@@ -93,7 +93,9 @@ class FastHTTPAutoFiller:
                     await client.get(url)
                     self.connection_pool.append(client)
                 except Exception as e:
-                    logger.warning(f"⚠️ Error pre-calentando conexión {i}: {e}")
+                    # Solo log crítico en producción
+                    if i == 0:
+                        logger.warning(f"⚠️ Error pre-calentando conexiones: {e}")
             
             # Cliente principal = primera conexión del pool
             if self.connection_pool:
@@ -105,7 +107,7 @@ class FastHTTPAutoFiller:
             logger.error(f"❌ Error creando pool: {e}")
             # Fallback: crear cliente simple
             self.client = httpx.AsyncClient(
-                timeout=httpx.Timeout(0.3, connect=0.05),
+                timeout=httpx.Timeout(0.1, connect=0.03),
                 limits=httpx.Limits(max_keepalive_connections=50, max_connections=100),
                 http2=True,
                 verify=False,
@@ -127,7 +129,7 @@ class FastHTTPAutoFiller:
         if self._ready_payloads:
             return  # Ya están generados
         
-        logger.info("📦 Pre-generando 72 payloads en memoria...")
+        # Pre-generar payloads silenciosamente (sin log)
         
         # Separar nombre completo UNA VEZ
         nombre_completo = user_data.get('nombre', '')
