@@ -758,6 +758,16 @@ def main():
         logger.error("❌ Debes configurar TELEGRAM_BOT_TOKEN en config.py")
         return
     
+    # 🔧 Verificar si este bot debe manejar comandos de Telegram
+    # Solo un bot puede recibir mensajes de Telegram (el primero)
+    enable_telegram = os.getenv('ENABLE_TELEGRAM_BOT', 'false').lower() == 'true'
+    
+    if not enable_telegram:
+        logger.warning("⚠️ Bot de Telegram DESACTIVADO - Solo monitoreando citas")
+        logger.info("✅ Bot completamente inicializado")
+        # Solo monitorear, sin recibir comandos de Telegram
+        return
+    
     # Crear aplicación
     application = Application.builder().token(TELEGRAM_BOT_TOKEN).post_init(post_init).post_shutdown(post_shutdown).build()
 
