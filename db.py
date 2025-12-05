@@ -178,19 +178,22 @@ class Database:
             return 0
     
     def get_next_in_queue(self):
-        """Obtener siguiente usuario en cola"""
+        """Obtener siguiente usuario en cola (CON LOCK para multi-región)"""
         if not self.conn:
             return None
         
         try:
             cursor = self.conn.cursor()
+            # SELECT FOR UPDATE SKIP LOCKED previene colisiones entre múltiples bots
             cursor.execute("""
                 SELECT user_id FROM queue 
                 WHERE processed = FALSE 
                 ORDER BY position ASC 
                 LIMIT 1
+                FOR UPDATE SKIP LOCKED
             """)
             result = cursor.fetchone()
+            self.conn.commit()  # Liberar lock después de obtener
             cursor.close()
             return result['user_id'] if result else None
         except Exception as e:

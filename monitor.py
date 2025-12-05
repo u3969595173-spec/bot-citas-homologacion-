@@ -6,10 +6,14 @@ Monitor de disponibilidad de citas - API Qmatic
 import asyncio
 from datetime import datetime
 import logging
+import os
 from http_client import HTTPClient
 from config import *
 
-logger = logging.getLogger(__name__)
+# Identificador de instancia para multi-región
+BOT_INSTANCE_ID = os.getenv('BOT_INSTANCE_ID', 'SINGLE')
+
+logger = logging.getLogger(f'{__name__}-{BOT_INSTANCE_ID}')
 
 
 class CitasMonitor:
@@ -35,12 +39,12 @@ class CitasMonitor:
             self.checks_count += 1
             
             if dates and len(dates) > 0:
-                logger.warning(f"🎯 CITAS DISPONIBLES: {dates}")
+                logger.warning(f"🎯 [{BOT_INSTANCE_ID}] CITAS DISPONIBLES: {dates}")
                 return dates
             else:
                 # Solo log cada 5000 checks (no cada 100) para no perder tiempo
                 if self.checks_count % 5000 == 0:
-                    logger.info(f"✓ Check #{self.checks_count} - Sin citas disponibles")
+                    logger.info(f"✓ [{BOT_INSTANCE_ID}] Check #{self.checks_count} - Sin citas disponibles")
                 return []
                 
         except Exception as e:

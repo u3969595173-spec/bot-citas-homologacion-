@@ -14,6 +14,9 @@ from datetime import datetime
 # Configurar OpenSSL para permitir renegociación legacy
 os.environ['OPENSSL_CONF'] = os.path.join(os.path.dirname(__file__), 'openssl.cnf')
 
+# Identificador de instancia para multi-región
+BOT_INSTANCE_ID = os.getenv('BOT_INSTANCE_ID', 'SINGLE')
+
 from config import TELEGRAM_BOT_TOKEN, ADMIN_USER_ID
 from monitor import CitasMonitor
 from user_data import UserDataManager
@@ -28,7 +31,7 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(f'{__name__}-{BOT_INSTANCE_ID}')
 
 # Estado global
 monitor = None
@@ -42,7 +45,7 @@ NOMBRE, APELLIDO, DOCUMENTO, EMAIL, TELEFONO = range(5)
 
 async def cita_disponible_handler(dates):
     """Callback cuando se detecta cita disponible - Sistema FIFO (cola) ULTRA-RÁPIDO"""
-    logger.warning(f"🎯 CITA DISPONIBLE: {dates}")
+    logger.warning(f"🎯 [{BOT_INSTANCE_ID}] CITA DISPONIBLE: {dates}")
     
     date_strings = [d["date"] if isinstance(d, dict) else str(d) for d in dates]
     first_date = date_strings[0] if date_strings else ""
@@ -124,7 +127,7 @@ async def cita_disponible_handler(dates):
                 # 📤 ENVIAR AL ADMIN: Número + Screenshot
                 if ADMIN_USER_ID:
                     admin_msg = (
-                        f"✅ **AUTO-RESERVA EXITOSA**\n\n"
+                        f"✅ **AUTO-RESERVA EXITOSA** [{BOT_INSTANCE_ID}]\n\n"
                         f"👤 {fill_data['nombre']}\n"
                         f"🆔 ID: {next_user_id}\n"
                         f"📅 Fecha: {first_date}\n"
